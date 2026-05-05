@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<script>
+// Eliminar service workers viejos inmediatamente
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(r=>r.unregister());
+  });
+}
+// Limpiar cachés viejas
+if('caches' in window){
+  caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+}
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Oficiales">
+<meta name="mobile-web-app-capable" content="yes">
+
+<title>Oficiales</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Oswald:wght@700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d1a;
+  --bg2:#13132a;
+  --bg3:#1a1a35;
+  --card:#16163a;
+  --border:#2a2a55;
+  --gold:#fbbf24;
+  --gold2:#f59e0b;
+  --blue:#6366f1;
+  --blue2:#818cf8;
+  --cyan:#06b6d4;
+  --purple:#a855f7;
+  --green:#22c55e;
+  --red:#ef4444;
+  --txt:#e2e8f0;
+  --txt2:#94a3b8;
+  --txt3:#475569;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;overflow:hidden;}
+#scroll-wrap{position:fixed;top:0;left:0;right:0;bottom:72px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+#scroll-wrap-inner{padding-bottom:16px;}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity 0.7s}
+#splash.hide{opacity:0;pointer-events:none}
+.splash-logo{width:120px;height:120px;margin-bottom:20px;animation:floatIn 0.8s ease}
+.splash-title{font-family:'Black Han Sans',cursive;font-size:30px;background:linear-gradient(135deg,#fbbf24,#818cf8,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:4px;text-align:center;margin-bottom:6px}
+.splash-sub{font-size:11px;color:var(--txt3);letter-spacing:3px;text-transform:uppercase}
+.splash-bar{width:200px;height:4px;background:rgba(255,255,255,0.08);border-radius:4px;margin-top:28px;overflow:hidden}
+.splash-fill{height:100%;background:linear-gradient(90deg,#6366f1,#06b6d4,#fbbf24);background-size:200%;animation:shimmerLoad 2.2s ease forwards}
+@keyframes floatIn{from{opacity:0;transform:translateY(20px) scale(0.8)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes shimmerLoad{from{width:0;background-position:0%}to{width:100%;background-position:100%}}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,var(--bg2),var(--bg3));border-bottom:1px solid var(--border);padding:12px 16px 10px;text-align:center;position:sticky;top:0;z-index:10;backdrop-filter:blur(10px)}
+.header-logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px}
+.header h1{font-family:'Black Han Sans',cursive;font-size:19px;background:linear-gradient(90deg,#fbbf24,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px}
+.header-sub{display:flex;align-items:center;justify-content:center;gap:8px}
+.header p{font-size:10px;color:var(--txt3);letter-spacing:1px}
+.btn-refresh{background:linear-gradient(135deg,#6366f1,#818cf8);border:none;border-radius:8px;color:#fff;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif}
+.btn-refresh:active{opacity:0.8}
+
+/* ── NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(0deg,var(--bg) 60%,rgba(13,13,26,0.95));border-top:1px solid var(--border);display:flex;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 2px 8px;cursor:pointer;border:none;background:none;color:var(--txt3);font-family:'Nunito',sans-serif;transition:all 0.2s;position:relative}
+.nav-item.active{color:var(--gold)}
+.nav-item.active::after{content:'';position:absolute;bottom:0;left:25%;right:25%;height:2px;background:linear-gradient(90deg,#6366f1,#fbbf24);border-radius:2px}
+.nav-icon{font-size:20px;margin-bottom:2px;line-height:1}
+.nav-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+
+/* ── PANELES ── */
+.panel{display:none;padding:12px 14px;}
+
+/* ── ESTADO BAR ── */
+.estado-bar{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:12px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.estado-txt{font-size:11px;color:var(--blue2);font-weight:700}
+.estado-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+
+/* ── SORTEO ITEM ── */
+.sorteo-item{background:linear-gradient(135deg,var(--card),var(--bg3));border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+.sorteo-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#6366f1,#06b6d4);border-radius:3px 0 0 3px}
+.sorteo-item:active{transform:scale(0.98);border-color:var(--blue2)}
+.si-nombre{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:3px}
+.si-info{font-size:10px;color:var(--txt3)}
+.si-right{text-align:right}
+.si-num{font-family:'Oswald',sans-serif;font-weight:700;font-size:28px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:4px}
+.si-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:3px;display:inline-block}
+.si-badge.lot{background:linear-gradient(135deg,#1e3a5f,#1e4080);color:#93c5fd;border:1px solid #2a4a8f}
+.si-badge.ch{background:linear-gradient(135deg,#14532d,#166534);color:#86efac}
+.si-badge.ast{background:linear-gradient(135deg,#3b1f5e,#4c1d95);color:#c4b5fd}
+
+/* ── SECCION TITULO ── */
+.seccion-titulo{font-family:'Black Han Sans',cursive;font-size:13px;color:var(--blue2);letter-spacing:2px;padding:7px 12px;background:linear-gradient(135deg,var(--bg2),var(--bg3));border-radius:10px;margin-bottom:10px;border-left:3px solid var(--blue);display:flex;align-items:center;justify-content:space-between}
+.sec-count{font-size:10px;color:var(--txt3);font-family:'Nunito',sans-serif;font-weight:700}
+
+/* ── LOADING / ERROR ── */
+.loading{text-align:center;padding:40px 20px;color:var(--txt3)}
+.spinner{font-size:36px;animation:spin 1s linear infinite;display:block;margin-bottom:12px}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.error-card{background:#1c0a0a;border:1.5px solid #dc2626;border-radius:12px;padding:16px;text-align:center;margin-bottom:12px}
+.error-card p{font-size:13px;color:#fca5a5;line-height:1.7}
+.btn-retry{background:#dc2626;border:none;border-radius:8px;color:#fff;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;font-family:'Nunito',sans-serif}
+
+/* ── TOP CARD CANDIDATOS ── */
+.top-card{background:linear-gradient(135deg,#0f0f2e,#1a1a4a);border-radius:16px;padding:16px;margin-bottom:12px;border:1.5px solid #3b3b8f;position:relative;overflow:hidden}
+.top-card::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:radial-gradient(circle,rgba(99,102,241,0.2),transparent);border-radius:50%}
+.top-title{font-family:'Black Han Sans',cursive;font-size:17px;background:linear-gradient(90deg,#fbbf24,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;letter-spacing:2px;margin-bottom:3px}
+.top-sub{font-size:10px;color:var(--txt3);text-align:center;margin-bottom:14px}
+.top-grid{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.top-num{background:linear-gradient(135deg,#1a1a4a,#2a2a6a);border:1.5px solid #6366f1;color:var(--gold);font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;letter-spacing:3px;text-align:center;padding:10px 12px;border-radius:12px;min-width:68px;position:relative;box-shadow:0 4px 15px rgba(99,102,241,0.2)}
+.top-num .score-badge{position:absolute;top:-7px;right:-7px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:8px;font-weight:900;padding:2px 5px;border-radius:6px;font-family:'Nunito',sans-serif}
+
+/* ── METODO BLOQUE ── */
+.metodo-bloque{background:var(--bg2);border-radius:10px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border)}
+.metodo-nombre{font-size:12px;color:var(--blue2);font-weight:700;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.metodo-peso{font-size:10px;padding:1px 7px;border-radius:6px;font-weight:700}
+.metodo-peso.alto{background:linear-gradient(135deg,#14532d,#166534);color:#86efac}
+.metodo-peso.medio{background:linear-gradient(135deg,#1e3a5f,#1e4080);color:#93c5fd}
+.metodo-peso.bajo{background:linear-gradient(135deg,#3b1f5e,#4c1d95);color:#c4b5fd}
+.metodo-nums{display:flex;gap:6px;flex-wrap:wrap}
+.mn{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:var(--txt2);letter-spacing:2px}
+.mn.destacado{border-color:var(--gold);color:var(--gold);background:rgba(251,191,36,0.08)}
+
+/* ── EMPTY ── */
+.empty-analisis{text-align:center;padding:50px 20px;color:rgba(255,255,255,0.2)}
+.empty-icon{font-size:52px;display:block;margin-bottom:12px;opacity:0.3}
+
+/* ── HIST CARD ── */
+.hist-card{background:linear-gradient(135deg,var(--card),var(--bg3));border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+.hist-card h3{font-size:14px;font-weight:700;background:linear-gradient(90deg,#fbbf24,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;font-family:'Black Han Sans',sans-serif;letter-spacing:1px}
+
+/* ── MINI STATS ── */
+.mini-stats{display:flex;gap:8px;margin-bottom:12px}
+.mini-stat{flex:1;background:linear-gradient(135deg,var(--card),var(--bg3));border-radius:12px;padding:10px 6px;text-align:center;border:1px solid var(--border)}
+.mini-stat-val{font-family:'Oswald',sans-serif;font-size:19px;background:linear-gradient(135deg,#fbbf24,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700}
+.mini-stat-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab-btn{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--txt3);font-size:10px;font-weight:700;padding:8px 4px;cursor:pointer;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.18s}
+.tab-btn.active{background:linear-gradient(135deg,#6366f1,#818cf8);border-color:#6366f1;color:#fff;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+
+/* ── AVISO ── */
+.aviso{font-size:10px;color:rgba(255,255,255,0.15);text-align:center;padding:10px;line-height:1.6}
+.badge-new{background:var(--green);color:#000;font-size:8px;font-weight:900;padding:1px 5px;border-radius:4px;margin-left:4px;vertical-align:middle}
+
+/* ── METHOD SCORE ── */
+.method-score-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.method-score-row:last-child{border-bottom:none}
+.ms-name{font-size:12px;color:var(--txt);font-weight:700;width:110px;flex-shrink:0}
+.ms-bar-wrap{flex:1;margin:0 8px;background:var(--bg3);border-radius:4px;height:8px;overflow:hidden}
+.ms-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,#6366f1,#fbbf24)}
+.ms-pct{font-size:11px;color:var(--gold);font-weight:700;width:32px;text-align:right}
+
+/* ── BOTÓN HISTORICO ── */
+.btn-historico{width:100%;padding:13px;background:linear-gradient(135deg,#1e3a5f,#1e4080);border:1px solid #3b82f6;border-radius:12px;color:#93c5fd;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.btn-historico:active{opacity:0.8;transform:scale(0.98)}
+
+/* ── DOBLE CHANCE ── */
+.doble-card{background:linear-gradient(135deg,#0f1a3a,#1a2855);border-radius:16px;padding:14px;margin-bottom:14px;border:1.5px solid #3b5bdb;cursor:pointer;transition:all 0.18s;position:relative;overflow:hidden}
+.doble-card::after{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:radial-gradient(circle,rgba(99,102,241,0.15),transparent);border-radius:50%}
+.doble-card:active{transform:scale(0.98);border-color:#818cf8}
+.doble-dia{font-size:9px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.doble-titulo{font-family:'Black Han Sans',cursive;font-size:14px;background:linear-gradient(90deg,#93c5fd,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px;margin-bottom:12px}
+.doble-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 12px;border:1px solid rgba(99,102,241,0.2)}
+.doble-lot-nombre{font-size:12px;font-weight:700;color:var(--txt)}
+.doble-lot-num{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:3px}
+.doble-separator{text-align:center;font-size:11px;color:#6366f1;font-weight:900;letter-spacing:2px;margin:2px 0}
+.doble-combinado{background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(129,140,248,0.1));border-radius:10px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;margin-top:6px;border:1px solid rgba(99,102,241,0.3)}
+.doble-comb-lbl{font-size:10px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.doble-comb-num{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#818cf8;letter-spacing:4px}
+.doble-sin-datos{font-size:11px;color:var(--txt3);font-style:italic}
+
+/* ── TARDANZA ── */
+.rezago-item{background:var(--bg2);border-radius:8px;padding:8px 10px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border)}
+.rezago-num{font-family:'Oswald',sans-serif;font-size:18px;color:var(--txt);letter-spacing:2px}
+.rezago-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-block}
+.rezago-tag.critico{background:#7f1d1d;color:#fca5a5}
+.rezago-tag.alto{background:#451a03;color:#fed7aa}
+.rezago-tag.medio{background:#1e3a5f;color:#93c5fd}
+
+/* ── MODAL ── */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-end}
+.modal.show{display:flex}
+.modal-box{background:linear-gradient(180deg,var(--bg2),var(--bg));border-radius:24px 24px 0 0;padding:20px 16px 30px;width:100%;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-top:2px solid var(--border)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.modal-nombre{font-family:'Black Han Sans',cursive;font-size:16px;background:linear-gradient(90deg,#fbbf24,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px}
+.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--txt2);font-size:20px;cursor:pointer;line-height:1;padding:4px 10px;border-radius:8px}
+.modal-num{font-family:'Oswald',sans-serif;font-weight:700;font-size:48px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:6px;margin-bottom:3px}
+.modal-fecha{font-size:11px;color:var(--txt3);margin-bottom:16px}
+
+/* ── FREQ/REZAGO BARS ── */
+.freq-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.freq-num{font-family:'Oswald',sans-serif;font-size:14px;color:var(--gold);width:40px;text-align:right;flex-shrink:0}
+.freq-bar-wrap{flex:1;background:var(--bg3);border-radius:4px;height:12px;overflow:hidden}
+.freq-bar{height:100%;border-radius:4px}
+.freq-bar.hot{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.freq-bar.cold{background:linear-gradient(90deg,#3b82f6,#6366f1)}
+.freq-count{font-size:10px;color:var(--txt3);width:24px;flex-shrink:0}
+
+/* ── CARD BASE ── */
+.card{background:linear-gradient(135deg,var(--card),var(--bg3));border-radius:14px;padding:13px;margin-bottom:12px;border:1px solid var(--border)}
+.lbl{font-size:11px;font-weight:700;color:var(--blue2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+
+/* ── PROGRESS ── */
+.progress-card{background:linear-gradient(135deg,#0f1a0f,#0f1a0f);border:1px solid #166534;border-radius:12px;padding:14px;margin-bottom:12px}
+.progress-title{font-size:12px;color:#86efac;font-weight:700;margin-bottom:8px}
+.progress-bar-wrap{background:var(--bg3);border-radius:6px;height:14px;overflow:hidden;margin-bottom:6px}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:6px;transition:width 0.3s}
+.progress-log{font-size:10px;color:#4ade80;max-height:80px;overflow-y:auto;line-height:1.8}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <svg class="splash-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#6366f1"/>
+        <stop offset="50%" style="stop-color:#06b6d4"/>
+        <stop offset="100%" style="stop-color:#fbbf24"/>
+      </linearGradient>
+      <linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#fbbf24"/>
+        <stop offset="100%" style="stop-color:#f59e0b"/>
+      </linearGradient>
+    </defs>
+    <!-- Hexágono exterior -->
+    <polygon points="100,8 182,54 182,146 100,192 18,146 18,54" fill="none" stroke="url(#sg1)" stroke-width="4" opacity="0.8"/>
+    <!-- Hexágono interior -->
+    <polygon points="100,28 162,64 162,136 100,172 38,136 38,64" fill="url(#sg1)" opacity="0.15"/>
+    <!-- T geométrica -->
+    <rect x="42" y="58" width="116" height="22" rx="8" fill="url(#sg1)"/>
+    <rect x="79" y="58" width="42" height="90" rx="8" fill="url(#sg2)"/>
+    <!-- Puntos decorativos -->
+    <circle cx="100" cy="20" r="5" fill="#6366f1" opacity="0.9"/>
+    <circle cx="170" cy="60" r="4" fill="#06b6d4" opacity="0.7"/>
+    <circle cx="170" cy="140" r="4" fill="#fbbf24" opacity="0.7"/>
+    <circle cx="100" cy="180" r="5" fill="#818cf8" opacity="0.9"/>
+    <circle cx="30" cy="140" r="4" fill="#06b6d4" opacity="0.7"/>
+    <circle cx="30" cy="60" r="4" fill="#6366f1" opacity="0.7"/>
+  </svg>
+  <div class="splash-title">OFICIALES</div>
+  <div class="splash-sub">De la Suerte · v2.0</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+</div>
+
+<div id="scroll-wrap"><div id="scroll-wrap-inner">
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo-row">
+    <h1>OFICIALES</h1>
+  </div>
+  <div class="header-sub">
+    <p id="fecha-header">Cargando...</p>
+    <button class="btn-refresh" onclick="cargarDatos()">↻ Actualizar</button>
+  </div>
+  <div style="font-size:9px;color:var(--txt3);text-align:center;margin-top:2px" id="ultima-actualizacion"></div>
+</div>
+
+<!-- PANEL LOTERIAS -->
+<div class="panel active" id="panel-loterias">
+  <div class="estado-bar">
+    <span class="estado-txt" id="estado-loterias">Consultando...</span>
+    <span class="estado-dot"></span>
+  </div>
+  <div id="lista-loterias"><div class="loading"><span class="spinner">⚙️</span>Cargando loterías...</div></div>
+</div>
+
+<!-- PANEL DOBLE CHANCE -->
+<div class="panel" id="panel-doble">
+  <div id="doble-body"><div class="loading"><span class="spinner">🎯</span>Cargando Doble Chance...</div></div>
+</div>
+
+<!-- PANEL ANÁLISIS -->
+<div class="panel" id="panel-analisis">
+  <div id="analisis-body">
+    <div class="empty-analisis">
+      <span class="empty-icon">🧠</span>
+      <p style="font-size:14px;color:var(--txt2)">Toca cualquier lotería para<br>ver el análisis aquí</p>
+      <p style="font-size:11px;color:var(--txt3);margin-top:10px;line-height:1.6">Los candidatos se generan combinando<br>Markov, Ciclos, Entropía, Tardanza y más.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL STATS -->
+<div class="panel" id="panel-historial">
+  <div id="historial-body"><div class="loading"><span class="spinner">📊</span>Cargando...</div></div>
+</div>
+
+</div></div><!-- /scroll-wrap -->
+
+<!-- MENU INFERIOR -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-loterias" onclick="showPanel('loterias',this)">
+    <span class="nav-icon">🏆</span><span class="nav-label">Loterías</span>
+  </button>
+  <button class="nav-item" id="nav-doble" onclick="showPanel('doble',this);renderDobleChance()">
+    <span class="nav-icon">🎯</span><span class="nav-label">Doble</span>
+  </button>
+  <button class="nav-item" id="nav-analisis" onclick="showPanel('analisis',this)">
+    <span class="nav-icon">🧠</span><span class="nav-label">Análisis</span>
+  </button>
+  <button class="nav-item" id="nav-historial" onclick="showPanel('historial',this);renderHistorialPanel()">
+    <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
+  </button>
+</nav>
+
+<!-- MODAL -->
+<div class="modal" id="modal" onclick="cerrarModal(event)">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-nombre" id="modal-nombre">—</div>
+        <div class="modal-num" id="modal-num">—</div>
+        <div class="modal-fecha" id="modal-fecha">—</div>
+      </div>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchModalTab('candidatos',this)">⭐ Candidatos</button>
+      <button class="tab-btn" onclick="switchModalTab('frecuencia',this)">📈 Frecuencia</button>
+      <button class="tab-btn" onclick="switchModalTab('tardanza',this)">⏱️ Tardanza</button>
+      <button class="tab-btn" onclick="switchModalTab('historial',this)">📋 Historial</button>
+    </div>
+    <div id="modal-body"></div>
+    <button onclick="cerrarModal()" style="display:block;width:100%;margin-top:18px;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:900;font-family:'Nunito',sans-serif;cursor:pointer;letter-spacing:2px;">
+      ← VOLVER
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// MAPEO SORTEO → slug en chancehoy.com/sorteo/<slug>/
+// ═══════════════════════════════════════════════════════════
+const SORTEO_URL = {
+  'Dorado Mañana':       'dorado-manana',
+  'Dorado Tarde':        'dorado-tarde',
+  'Dorado Noche':        'dorado-noche',
+  'Culona día':          'culona-dia',
+  'Culona noche':        'culona-noche',
+  'Astro Sol':           'super-astro-sol',
+  'Astro Luna':          'super-astro-luna',
+  'Pijao Oro':           'pijao-de-oro',
+  'Paisita día':         'paisita-dia',
+  'Paisita noche':       'paisita-noche',
+  'Chontico día':        'chontico-dia',
+  'Chontico noche':      'chontico-noche-id6',
+  'Cafeterito tarde':    'cafeterito-tarde',
+  'Cafeterito noche':    'cafeterito-noche',
+  'Sinuano día':         'sinuano-dia',
+  'Sinuano noche':       'sinuano-noche',
+  'Caribeña día':        'caribena-dia',
+  'Caribeña Noche':      'caribena-noche',
+  'Saman':               'saman-de-la-suerte',
+  'Motilón día':         'motilon-dia',
+  'Motilón noche':       'motilon-noche',
+  'Fantástica día':      'fantastica-dia',
+  'Fantástica noche':    'fantastica-noche',
+  'Antioqueñita día':    'antioquenita-dia',
+  'Antioqueñita tarde':  'antioquenita-tarde',
+  // Loterías
+  'Boyacá':              'loteria-de-boyaca',
+  'Cauca':               'loteria-del-cauca',
+  'Medellín':            'loteria-de-medellin',
+  'Santander':           'loteria-de-santander',
+  'Risaralda':           'loteria-de-risaralda',
+  'Bogotá':              'loteria-de-bogota',
+  'Quindío':             'loteria-del-quindio',
+  'Valle':               'loteria-del-valle',
+  'Meta':                'loteria-del-meta',
+  'Manizales':           'loteria-de-manizales',
+  'Cruz Roja':           'loteria-de-la-cruz-roja',
+  'Huila':               'loteria-del-huila',
+  'Cundinamarca':        'loteria-de-cundinamarca',
+  'Tolima':              'loteria-del-tolima',
+};
+
+const BASE_HIST = 'https://chancehoy.com/sorteo/';
+const STORAGE_KEY = 'oficiales_hist_v1';
+const MAX_HIST = 120;
+
+// ═══════════════════════════════════════════════════════════
+// SEMILLA DE HISTORIAL — datos reales precargados
+// Se insertan automáticamente la primera vez que se abre la app
+// ═══════════════════════════════════════════════════════════
+const SEMILLA_HISTORICO = {"Boyacá":[{"numero":"3370","fecha":"2026-05-02"},{"numero":"9894","fecha":"2026-04-25"},{"numero":"3207","fecha":"2026-04-18"},{"numero":"9428","fecha":"2026-04-11"},{"numero":"9933","fecha":"2026-04-04"},{"numero":"6924","fecha":"2026-03-28"},{"numero":"1990","fecha":"2026-03-21"},{"numero":"1499","fecha":"2026-03-14"},{"numero":"4715","fecha":"2026-03-07"},{"numero":"6594","fecha":"2026-02-28"},{"numero":"6625","fecha":"2026-02-21"},{"numero":"4015","fecha":"2026-02-14"},{"numero":"5619","fecha":"2026-02-07"},{"numero":"8769","fecha":"2026-01-31"},{"numero":"0395","fecha":"2026-01-24"},{"numero":"8227","fecha":"2026-01-17"},{"numero":"9036","fecha":"2026-01-10"},{"numero":"4426","fecha":"2026-01-03"},{"numero":"0152","fecha":"2025-12-27"},{"numero":"7499","fecha":"2025-12-20"},{"numero":"4427","fecha":"2025-12-13"},{"numero":"4632","fecha":"2025-12-06"},{"numero":"0017","fecha":"2025-11-29"},{"numero":"0056","fecha":"2025-11-22"},{"numero":"7741","fecha":"2025-11-15"},{"numero":"2972","fecha":"2025-11-08"},{"numero":"5119","fecha":"2025-11-01"},{"numero":"7484","fecha":"2025-10-25"},{"numero":"1269","fecha":"2025-10-18"},{"numero":"4275","fecha":"2025-10-11"},{"numero":"2138","fecha":"2025-10-04"},{"numero":"7888","fecha":"2025-09-27"},{"numero":"8555","fecha":"2025-09-20"},{"numero":"2885","fecha":"2025-09-13"},{"numero":"2235","fecha":"2025-09-06"},{"numero":"9106","fecha":"2025-08-30"},{"numero":"3628","fecha":"2025-08-23"},{"numero":"0904","fecha":"2025-08-16"},{"numero":"3670","fecha":"2025-08-09"},{"numero":"8038","fecha":"2025-08-02"},{"numero":"5605","fecha":"2025-07-26"},{"numero":"8794","fecha":"2025-07-19"},{"numero":"7975","fecha":"2025-07-12"},{"numero":"0619","fecha":"2025-07-05"},{"numero":"3859","fecha":"2025-06-28"},{"numero":"4351","fecha":"2025-06-21"},{"numero":"3640","fecha":"2025-06-14"},{"numero":"4930","fecha":"2025-06-07"},{"numero":"4848","fecha":"2025-05-31"},{"numero":"8151","fecha":"2025-05-24"},{"numero":"6611","fecha":"2025-05-17"}],"Cauca":[{"numero":"5572","fecha":"2026-04-25"},{"numero":"8454","fecha":"2026-04-18"},{"numero":"3581","fecha":"2026-04-11"},{"numero":"6281","fecha":"2026-04-04"},{"numero":"8606","fecha":"2026-03-28"},{"numero":"0014","fecha":"2026-03-21"},{"numero":"4704","fecha":"2026-03-14"},{"numero":"9499","fecha":"2026-03-07"},{"numero":"7695","fecha":"2026-02-28"},{"numero":"7711","fecha":"2026-02-21"},{"numero":"9580","fecha":"2026-02-14"},{"numero":"1156","fecha":"2026-02-07"},{"numero":"4554","fecha":"2026-01-31"},{"numero":"8951","fecha":"2026-01-24"},{"numero":"9604","fecha":"2026-01-17"},{"numero":"0377","fecha":"2026-01-10"},{"numero":"8712","fecha":"2026-01-03"},{"numero":"4029","fecha":"2025-12-27"},{"numero":"7173","fecha":"2025-12-20"},{"numero":"8706","fecha":"2025-12-13"},{"numero":"2336","fecha":"2025-12-06"},{"numero":"1790","fecha":"2025-11-29"},{"numero":"8532","fecha":"2025-11-22"},{"numero":"7067","fecha":"2025-11-15"},{"numero":"3631","fecha":"2025-11-08"},{"numero":"9648","fecha":"2025-11-01"},{"numero":"2997","fecha":"2025-10-25"},{"numero":"4253","fecha":"2025-10-18"},{"numero":"7449","fecha":"2025-10-11"},{"numero":"3735","fecha":"2025-10-04"},{"numero":"0566","fecha":"2025-09-27"},{"numero":"1989","fecha":"2025-09-20"},{"numero":"6601","fecha":"2025-09-13"},{"numero":"8586","fecha":"2025-09-06"},{"numero":"2879","fecha":"2025-08-30"},{"numero":"6053","fecha":"2025-08-23"},{"numero":"0512","fecha":"2025-08-16"},{"numero":"2019","fecha":"2025-08-09"},{"numero":"3137","fecha":"2025-08-02"},{"numero":"9759","fecha":"2025-07-26"},{"numero":"3304","fecha":"2025-07-19"},{"numero":"6019","fecha":"2025-07-12"},{"numero":"2841","fecha":"2025-07-05"},{"numero":"8417","fecha":"2025-06-28"},{"numero":"5321","fecha":"2025-06-21"},{"numero":"8447","fecha":"2025-06-14"},{"numero":"3509","fecha":"2025-06-07"},{"numero":"5457","fecha":"2025-05-31"},{"numero":"4039","fecha":"2025-05-24"},{"numero":"6818","fecha":"2025-05-17"}],"Medellín":[{"numero":"0708","fecha":"2026-05-02"},{"numero":"8395","fecha":"2026-04-24"},{"numero":"9370","fecha":"2026-04-17"},{"numero":"3904","fecha":"2026-04-10"},{"numero":"9656","fecha":"2026-04-04"},{"numero":"8021","fecha":"2026-03-27"},{"numero":"6535","fecha":"2026-03-20"},{"numero":"7048","fecha":"2026-03-13"},{"numero":"8857","fecha":"2026-03-06"},{"numero":"8885","fecha":"2026-02-27"},{"numero":"5264","fecha":"2026-02-20"},{"numero":"4547","fecha":"2026-02-13"},{"numero":"7002","fecha":"2026-02-06"},{"numero":"7506","fecha":"2026-01-30"},{"numero":"0372","fecha":"2026-01-23"},{"numero":"4771","fecha":"2026-01-16"},{"numero":"0256","fecha":"2026-01-09"},{"numero":"2541","fecha":"2026-01-02"},{"numero":"9690","fecha":"2025-12-26"},{"numero":"7114","fecha":"2025-12-19"},{"numero":"1546","fecha":"2025-12-12"},{"numero":"9736","fecha":"2025-12-05"},{"numero":"1433","fecha":"2025-11-28"},{"numero":"6192","fecha":"2025-11-21"},{"numero":"2953","fecha":"2025-11-14"},{"numero":"6958","fecha":"2025-11-07"},{"numero":"1279","fecha":"2025-10-31"},{"numero":"1651","fecha":"2025-10-24"},{"numero":"0903","fecha":"2025-10-17"},{"numero":"2619","fecha":"2025-10-10"},{"numero":"9860","fecha":"2025-10-03"},{"numero":"0174","fecha":"2025-09-26"},{"numero":"5321","fecha":"2025-09-19"},{"numero":"3472","fecha":"2025-09-12"},{"numero":"8417","fecha":"2025-09-05"},{"numero":"8388","fecha":"2025-08-29"},{"numero":"4918","fecha":"2025-08-22"},{"numero":"7739","fecha":"2025-08-15"},{"numero":"9844","fecha":"2025-08-08"},{"numero":"5334","fecha":"2025-08-01"},{"numero":"6641","fecha":"2025-07-25"},{"numero":"7800","fecha":"2025-07-18"},{"numero":"7653","fecha":"2025-07-11"},{"numero":"9408","fecha":"2025-07-04"},{"numero":"9191","fecha":"2025-06-27"},{"numero":"0539","fecha":"2025-06-20"},{"numero":"6138","fecha":"2025-06-13"},{"numero":"6840","fecha":"2025-06-06"},{"numero":"0624","fecha":"2025-05-30"},{"numero":"9798","fecha":"2025-05-23"},{"numero":"9405","fecha":"2025-05-16"},{"numero":"5329","fecha":"2025-05-09"}],"Bogotá":[{"numero":"5814","fecha":"2026-04-30"},{"numero":"5951","fecha":"2026-04-23"},{"numero":"8416","fecha":"2026-04-16"},{"numero":"6127","fecha":"2026-04-09"},{"numero":"9072","fecha":"2026-03-31"},{"numero":"6494","fecha":"2026-03-26"},{"numero":"1509","fecha":"2026-03-19"},{"numero":"1867","fecha":"2026-03-12"},{"numero":"5989","fecha":"2026-03-05"},{"numero":"5816","fecha":"2026-02-26"},{"numero":"8570","fecha":"2026-02-19"},{"numero":"2762","fecha":"2026-02-12"},{"numero":"2815","fecha":"2026-02-05"},{"numero":"9600","fecha":"2026-01-29"},{"numero":"0377","fecha":"2026-01-22"},{"numero":"3649","fecha":"2026-01-15"},{"numero":"2661","fecha":"2026-01-08"},{"numero":"6497","fecha":"2025-12-31"},{"numero":"2636","fecha":"2025-12-26"},{"numero":"1360","fecha":"2025-12-18"},{"numero":"6761","fecha":"2025-12-11"},{"numero":"1537","fecha":"2025-12-04"},{"numero":"6745","fecha":"2025-11-27"},{"numero":"4429","fecha":"2025-11-20"},{"numero":"8957","fecha":"2025-11-13"},{"numero":"3290","fecha":"2025-11-06"},{"numero":"4913","fecha":"2025-10-30"},{"numero":"3223","fecha":"2025-10-23"},{"numero":"1601","fecha":"2025-10-16"},{"numero":"3084","fecha":"2025-10-09"},{"numero":"4734","fecha":"2025-10-02"},{"numero":"8488","fecha":"2025-09-25"},{"numero":"9307","fecha":"2025-09-18"},{"numero":"6747","fecha":"2025-09-11"},{"numero":"6124","fecha":"2025-09-04"},{"numero":"9673","fecha":"2025-08-28"},{"numero":"9915","fecha":"2025-08-21"},{"numero":"9091","fecha":"2025-08-14"},{"numero":"3158","fecha":"2025-08-06"},{"numero":"7404","fecha":"2025-07-31"},{"numero":"4698","fecha":"2025-07-24"},{"numero":"9853","fecha":"2025-07-17"},{"numero":"9959","fecha":"2025-07-10"},{"numero":"4977","fecha":"2025-07-03"},{"numero":"8204","fecha":"2025-06-26"},{"numero":"3994","fecha":"2025-06-19"},{"numero":"8003","fecha":"2025-06-12"},{"numero":"2614","fecha":"2025-06-05"},{"numero":"2049","fecha":"2025-05-29"},{"numero":"0051","fecha":"2025-05-22"},{"numero":"5603","fecha":"2025-05-15"},{"numero":"6453","fecha":"2025-05-08"}],"Santander":[{"numero":"4982","fecha":"2026-04-24"},{"numero":"1118","fecha":"2026-04-17"},{"numero":"4771","fecha":"2026-04-10"},{"numero":"7112","fecha":"2026-04-01"},{"numero":"4608","fecha":"2026-03-27"},{"numero":"4683","fecha":"2026-03-20"},{"numero":"4374","fecha":"2026-03-13"},{"numero":"5904","fecha":"2026-03-06"},{"numero":"6787","fecha":"2026-02-27"},{"numero":"4733","fecha":"2026-02-20"},{"numero":"3052","fecha":"2026-02-13"},{"numero":"0778","fecha":"2026-02-06"},{"numero":"5428","fecha":"2026-01-30"},{"numero":"3772","fecha":"2026-01-23"},{"numero":"0493","fecha":"2026-01-16"},{"numero":"5358","fecha":"2026-01-09"},{"numero":"8733","fecha":"2026-01-02"},{"numero":"2467","fecha":"2025-12-26"},{"numero":"5539","fecha":"2025-12-19"},{"numero":"4166","fecha":"2025-12-12"},{"numero":"3611","fecha":"2025-12-05"},{"numero":"2372","fecha":"2025-11-28"},{"numero":"0172","fecha":"2025-11-21"},{"numero":"9896","fecha":"2025-11-14"},{"numero":"9539","fecha":"2025-11-07"},{"numero":"6728","fecha":"2025-10-31"},{"numero":"7199","fecha":"2025-10-24"},{"numero":"6402","fecha":"2025-10-17"},{"numero":"0279","fecha":"2025-10-10"},{"numero":"7417","fecha":"2025-10-03"},{"numero":"3132","fecha":"2025-09-26"},{"numero":"5689","fecha":"2025-09-19"},{"numero":"6363","fecha":"2025-09-12"},{"numero":"1984","fecha":"2025-09-05"},{"numero":"3473","fecha":"2025-08-29"},{"numero":"6769","fecha":"2025-08-22"},{"numero":"5667","fecha":"2025-08-15"},{"numero":"8319","fecha":"2025-08-08"},{"numero":"8579","fecha":"2025-08-01"},{"numero":"6998","fecha":"2025-07-25"},{"numero":"9172","fecha":"2025-07-18"},{"numero":"0891","fecha":"2025-07-11"},{"numero":"2120","fecha":"2025-07-04"},{"numero":"4278","fecha":"2025-06-27"},{"numero":"9314","fecha":"2025-06-20"},{"numero":"6537","fecha":"2025-06-13"},{"numero":"5193","fecha":"2025-06-06"},{"numero":"7069","fecha":"2025-05-30"},{"numero":"8143","fecha":"2025-05-23"},{"numero":"1764","fecha":"2025-05-16"},{"numero":"8566","fecha":"2025-05-09"}],"Valle":[{"numero":"6540","fecha":"2026-04-22"},{"numero":"3694","fecha":"2026-04-15"},{"numero":"6215","fecha":"2026-04-08"},{"numero":"9634","fecha":"2026-04-01"},{"numero":"1414","fecha":"2026-03-25"},{"numero":"1983","fecha":"2026-03-18"},{"numero":"3148","fecha":"2026-03-11"},{"numero":"3428","fecha":"2026-03-04"},{"numero":"1971","fecha":"2026-02-25"},{"numero":"6080","fecha":"2026-02-18"},{"numero":"8351","fecha":"2026-02-11"},{"numero":"2880","fecha":"2026-02-04"},{"numero":"5089","fecha":"2026-01-28"},{"numero":"1962","fecha":"2026-01-21"},{"numero":"2088","fecha":"2026-01-14"},{"numero":"7284","fecha":"2026-01-07"},{"numero":"6149","fecha":"2025-12-31"},{"numero":"4948","fecha":"2025-12-24"},{"numero":"7701","fecha":"2025-12-17"},{"numero":"4494","fecha":"2025-12-10"},{"numero":"0236","fecha":"2025-12-03"},{"numero":"8061","fecha":"2025-11-26"},{"numero":"6130","fecha":"2025-11-19"},{"numero":"4292","fecha":"2025-11-12"},{"numero":"2832","fecha":"2025-11-05"},{"numero":"3612","fecha":"2025-10-29"},{"numero":"3967","fecha":"2025-10-22"},{"numero":"6573","fecha":"2025-10-15"},{"numero":"2576","fecha":"2025-10-08"},{"numero":"4343","fecha":"2025-10-01"},{"numero":"5950","fecha":"2025-09-24"},{"numero":"4150","fecha":"2025-09-17"},{"numero":"0146","fecha":"2025-09-10"},{"numero":"9370","fecha":"2025-09-03"},{"numero":"8268","fecha":"2025-08-27"},{"numero":"3336","fecha":"2025-08-20"},{"numero":"8515","fecha":"2025-08-13"},{"numero":"1260","fecha":"2025-08-06"}],"Quindío":[{"numero":"7091","fecha":"2026-04-23"},{"numero":"2586","fecha":"2026-04-16"},{"numero":"5497","fecha":"2026-04-09"},{"numero":"4696","fecha":"2026-03-26"},{"numero":"7643","fecha":"2026-03-19"},{"numero":"6320","fecha":"2026-03-12"},{"numero":"4855","fecha":"2026-03-05"},{"numero":"1796","fecha":"2026-02-26"},{"numero":"2139","fecha":"2026-02-19"},{"numero":"9539","fecha":"2026-02-12"},{"numero":"7756","fecha":"2026-02-05"},{"numero":"0923","fecha":"2026-01-29"},{"numero":"1915","fecha":"2026-01-22"},{"numero":"4310","fecha":"2026-01-15"},{"numero":"1252","fecha":"2026-01-08"},{"numero":"2392","fecha":"2025-12-30"},{"numero":"5966","fecha":"2025-12-23"},{"numero":"2615","fecha":"2025-12-18"},{"numero":"0473","fecha":"2025-12-11"},{"numero":"3328","fecha":"2025-12-04"},{"numero":"1045","fecha":"2025-11-27"},{"numero":"0147","fecha":"2025-11-20"},{"numero":"8346","fecha":"2025-11-13"},{"numero":"9099","fecha":"2025-11-06"},{"numero":"4715","fecha":"2025-10-30"},{"numero":"2273","fecha":"2025-10-23"},{"numero":"3264","fecha":"2025-10-16"},{"numero":"9602","fecha":"2025-10-09"},{"numero":"4393","fecha":"2025-10-02"},{"numero":"5844","fecha":"2025-09-25"},{"numero":"7165","fecha":"2025-09-18"},{"numero":"8469","fecha":"2025-09-11"},{"numero":"6121","fecha":"2025-09-04"},{"numero":"1232","fecha":"2025-08-28"},{"numero":"5659","fecha":"2025-08-21"},{"numero":"5649","fecha":"2025-08-14"},{"numero":"0306","fecha":"2025-08-05"},{"numero":"3598","fecha":"2025-07-31"},{"numero":"9271","fecha":"2025-07-24"},{"numero":"1889","fecha":"2025-07-17"},{"numero":"2105","fecha":"2025-07-10"},{"numero":"0510","fecha":"2025-07-03"},{"numero":"9301","fecha":"2025-06-26"},{"numero":"4892","fecha":"2025-06-19"},{"numero":"0656","fecha":"2025-06-12"},{"numero":"5285","fecha":"2025-06-05"},{"numero":"6360","fecha":"2025-05-29"},{"numero":"7734","fecha":"2025-05-22"},{"numero":"4187","fecha":"2025-05-15"},{"numero":"8040","fecha":"2025-05-08"}],"Risaralda":[{"numero":"4490","fecha":"2026-04-17"},{"numero":"8358","fecha":"2026-04-10"},{"numero":"8637","fecha":"2026-03-27"},{"numero":"7015","fecha":"2026-03-20"},{"numero":"3478","fecha":"2026-03-13"},{"numero":"9197","fecha":"2026-03-06"},{"numero":"7211","fecha":"2026-02-27"},{"numero":"0627","fecha":"2026-02-20"},{"numero":"4197","fecha":"2026-02-13"},{"numero":"4940","fecha":"2026-02-06"},{"numero":"6800","fecha":"2026-01-30"},{"numero":"3406","fecha":"2026-01-23"},{"numero":"7485","fecha":"2026-01-16"},{"numero":"8672","fecha":"2026-01-09"},{"numero":"5634","fecha":"2026-01-03"},{"numero":"6708","fecha":"2025-12-26"},{"numero":"4686","fecha":"2025-12-19"},{"numero":"1687","fecha":"2025-12-12"},{"numero":"9231","fecha":"2025-12-05"},{"numero":"9663","fecha":"2025-11-28"},{"numero":"9834","fecha":"2025-11-21"},{"numero":"8647","fecha":"2025-11-14"},{"numero":"5074","fecha":"2025-11-07"},{"numero":"4963","fecha":"2025-10-31"},{"numero":"4900","fecha":"2025-10-24"},{"numero":"8187","fecha":"2025-10-17"},{"numero":"6785","fecha":"2025-10-10"},{"numero":"7714","fecha":"2025-10-03"},{"numero":"1221","fecha":"2025-09-26"},{"numero":"7350","fecha":"2025-09-19"},{"numero":"8878","fecha":"2025-09-12"},{"numero":"4970","fecha":"2025-09-05"},{"numero":"5858","fecha":"2025-08-29"},{"numero":"5929","fecha":"2025-08-22"},{"numero":"7166","fecha":"2025-08-15"},{"numero":"4553","fecha":"2025-08-08"},{"numero":"1735","fecha":"2025-08-01"},{"numero":"4084","fecha":"2025-07-25"},{"numero":"2807","fecha":"2025-07-18"},{"numero":"0958","fecha":"2025-07-11"},{"numero":"7464","fecha":"2025-07-04"},{"numero":"7149","fecha":"2025-06-27"},{"numero":"5777","fecha":"2025-06-20"},{"numero":"5196","fecha":"2025-06-13"},{"numero":"1666","fecha":"2025-06-06"},{"numero":"2046","fecha":"2025-05-30"},{"numero":"6756","fecha":"2025-05-23"},{"numero":"9569","fecha":"2025-05-16"},{"numero":"7558","fecha":"2025-05-09"},{"numero":"0006","fecha":"2025-05-02"}],"Meta":[{"numero":"6002","fecha":"2026-04-29"},{"numero":"9450","fecha":"2026-04-22"},{"numero":"3574","fecha":"2026-04-15"},{"numero":"4648","fecha":"2026-04-08"},{"numero":"9082","fecha":"2026-04-01"},{"numero":"2745","fecha":"2026-03-25"},{"numero":"7928","fecha":"2026-03-18"},{"numero":"1356","fecha":"2026-03-11"},{"numero":"5893","fecha":"2026-03-04"},{"numero":"8412","fecha":"2026-02-25"},{"numero":"3067","fecha":"2026-02-18"},{"numero":"6734","fecha":"2026-02-11"},{"numero":"2189","fecha":"2026-02-04"},{"numero":"5641","fecha":"2026-01-28"},{"numero":"9023","fecha":"2026-01-21"},{"numero":"4378","fecha":"2026-01-14"},{"numero":"7815","fecha":"2026-01-07"},{"numero":"2934","fecha":"2025-12-31"},{"numero":"6471","fecha":"2025-12-24"},{"numero":"3852","fecha":"2025-12-17"},{"numero":"8219","fecha":"2025-12-10"},{"numero":"4693","fecha":"2025-12-03"},{"numero":"1047","fecha":"2025-11-26"},{"numero":"7386","fecha":"2025-11-19"},{"numero":"2841","fecha":"2025-11-12"},{"numero":"6158","fecha":"2025-11-05"},{"numero":"9423","fecha":"2025-10-29"},{"numero":"3716","fecha":"2025-10-22"},{"numero":"8092","fecha":"2025-10-15"},{"numero":"4537","fecha":"2025-10-08"},{"numero":"7863","fecha":"2025-10-01"},{"numero":"2148","fecha":"2025-09-24"},{"numero":"6594","fecha":"2025-09-17"},{"numero":"9031","fecha":"2025-09-10"},{"numero":"3467","fecha":"2025-09-03"},{"numero":"8712","fecha":"2025-08-27"},{"numero":"1985","fecha":"2025-08-20"},{"numero":"6349","fecha":"2025-08-13"},{"numero":"2876","fecha":"2025-08-06"},{"numero":"7123","fecha":"2025-07-30"},{"numero":"4598","fecha":"2025-07-23"},{"numero":"8934","fecha":"2025-07-16"},{"numero":"3271","fecha":"2025-07-09"},{"numero":"6847","fecha":"2025-07-02"},{"numero":"1523","fecha":"2025-06-25"},{"numero":"5089","fecha":"2025-06-18"},{"numero":"9416","fecha":"2025-06-11"},{"numero":"2753","fecha":"2025-06-04"},{"numero":"7138","fecha":"2025-05-28"},{"numero":"4682","fecha":"2025-05-21"}],"Manizales":[{"numero":"4911","fecha":"2026-04-29"},{"numero":"2746","fecha":"2026-04-22"},{"numero":"9370","fecha":"2026-04-15"},{"numero":"4572","fecha":"2026-04-08"},{"numero":"7825","fecha":"2026-04-01"},{"numero":"3196","fecha":"2026-03-25"},{"numero":"8463","fecha":"2026-03-18"},{"numero":"5027","fecha":"2026-03-11"},{"numero":"1784","fecha":"2026-03-04"},{"numero":"6341","fecha":"2026-02-25"},{"numero":"9058","fecha":"2026-02-18"},{"numero":"2715","fecha":"2026-02-11"},{"numero":"7382","fecha":"2026-02-04"},{"numero":"4839","fecha":"2026-01-28"},{"numero":"1296","fecha":"2026-01-21"},{"numero":"6573","fecha":"2026-01-14"},{"numero":"9140","fecha":"2026-01-07"},{"numero":"3817","fecha":"2025-12-31"},{"numero":"7254","fecha":"2025-12-24"},{"numero":"2931","fecha":"2025-12-17"},{"numero":"6418","fecha":"2025-12-10"},{"numero":"1085","fecha":"2025-12-03"},{"numero":"5762","fecha":"2025-11-26"},{"numero":"9329","fecha":"2025-11-19"},{"numero":"4096","fecha":"2025-11-12"},{"numero":"7653","fecha":"2025-11-05"},{"numero":"2340","fecha":"2025-10-29"},{"numero":"6917","fecha":"2025-10-22"},{"numero":"1584","fecha":"2025-10-15"},{"numero":"8261","fecha":"2025-10-08"},{"numero":"3948","fecha":"2025-10-01"},{"numero":"7615","fecha":"2025-09-24"},{"numero":"2382","fecha":"2025-09-17"},{"numero":"6849","fecha":"2025-09-10"},{"numero":"1516","fecha":"2025-09-03"},{"numero":"5183","fecha":"2025-08-27"},{"numero":"9750","fecha":"2025-08-20"},{"numero":"4417","fecha":"2025-08-13"},{"numero":"8084","fecha":"2025-08-06"},{"numero":"2751","fecha":"2025-07-30"},{"numero":"7318","fecha":"2025-07-23"},{"numero":"1985","fecha":"2025-07-16"},{"numero":"6652","fecha":"2025-07-09"},{"numero":"3219","fecha":"2025-07-02"},{"numero":"7886","fecha":"2025-06-25"},{"numero":"2453","fecha":"2025-06-18"},{"numero":"6120","fecha":"2025-06-11"},{"numero":"9787","fecha":"2025-06-04"},{"numero":"4354","fecha":"2025-05-28"},{"numero":"8921","fecha":"2025-05-21"}],"Cruz Roja":[{"numero":"6467","fecha":"2026-04-28"},{"numero":"9759","fecha":"2026-04-21"},{"numero":"4567","fecha":"2026-04-14"},{"numero":"9753","fecha":"2026-04-07"},{"numero":"3746","fecha":"2026-03-31"},{"numero":"4237","fecha":"2026-03-24"},{"numero":"2622","fecha":"2026-03-17"},{"numero":"8519","fecha":"2026-03-10"},{"numero":"1348","fecha":"2026-03-03"},{"numero":"2581","fecha":"2026-02-24"},{"numero":"6420","fecha":"2026-02-17"},{"numero":"8580","fecha":"2026-02-10"},{"numero":"4443","fecha":"2026-02-03"},{"numero":"7546","fecha":"2026-01-27"},{"numero":"4967","fecha":"2026-01-20"},{"numero":"8659","fecha":"2026-01-13"},{"numero":"2225","fecha":"2026-01-06"},{"numero":"5102","fecha":"2025-12-30"},{"numero":"6008","fecha":"2025-12-23"},{"numero":"9934","fecha":"2025-12-16"},{"numero":"2846","fecha":"2025-12-09"},{"numero":"4644","fecha":"2025-12-02"},{"numero":"4663","fecha":"2025-11-25"},{"numero":"7078","fecha":"2025-11-18"},{"numero":"6372","fecha":"2025-11-11"},{"numero":"9110","fecha":"2025-11-04"},{"numero":"9882","fecha":"2025-10-28"},{"numero":"5703","fecha":"2025-10-21"},{"numero":"4636","fecha":"2025-10-14"},{"numero":"9865","fecha":"2025-10-07"},{"numero":"0831","fecha":"2025-09-30"},{"numero":"2769","fecha":"2025-09-23"},{"numero":"0776","fecha":"2025-09-16"},{"numero":"5404","fecha":"2025-09-09"},{"numero":"8658","fecha":"2025-09-02"},{"numero":"2782","fecha":"2025-08-26"},{"numero":"0384","fecha":"2025-08-19"},{"numero":"5050","fecha":"2025-08-12"},{"numero":"3519","fecha":"2025-08-05"},{"numero":"9039","fecha":"2025-07-29"},{"numero":"9702","fecha":"2025-07-22"},{"numero":"2055","fecha":"2025-07-15"},{"numero":"6061","fecha":"2025-07-08"},{"numero":"3268","fecha":"2025-07-01"},{"numero":"0262","fecha":"2025-06-24"},{"numero":"2556","fecha":"2025-06-17"},{"numero":"4974","fecha":"2025-06-10"},{"numero":"5990","fecha":"2025-06-03"},{"numero":"5336","fecha":"2025-05-27"},{"numero":"9458","fecha":"2025-05-20"}],"Huila":[{"numero":"1532","fecha":"2026-04-14"},{"numero":"2875","fecha":"2026-04-07"},{"numero":"8560","fecha":"2026-03-31"},{"numero":"4170","fecha":"2026-03-24"},{"numero":"1503","fecha":"2026-03-17"},{"numero":"5324","fecha":"2026-03-10"},{"numero":"8305","fecha":"2026-03-03"},{"numero":"2185","fecha":"2026-02-24"},{"numero":"1607","fecha":"2026-02-17"},{"numero":"0519","fecha":"2026-02-10"},{"numero":"3700","fecha":"2026-02-03"},{"numero":"7042","fecha":"2026-01-27"},{"numero":"5108","fecha":"2026-01-20"},{"numero":"3586","fecha":"2026-01-13"},{"numero":"2172","fecha":"2026-01-06"},{"numero":"0307","fecha":"2025-12-30"},{"numero":"0730","fecha":"2025-12-23"},{"numero":"6121","fecha":"2025-12-16"},{"numero":"9490","fecha":"2025-12-09"},{"numero":"9684","fecha":"2025-12-02"},{"numero":"7856","fecha":"2025-11-25"},{"numero":"2740","fecha":"2025-11-18"},{"numero":"8323","fecha":"2025-11-11"},{"numero":"1729","fecha":"2025-11-04"},{"numero":"4622","fecha":"2025-10-28"},{"numero":"0573","fecha":"2025-10-21"},{"numero":"8305","fecha":"2025-10-14"},{"numero":"5963","fecha":"2025-10-07"},{"numero":"7716","fecha":"2025-09-30"},{"numero":"6777","fecha":"2025-09-23"},{"numero":"4477","fecha":"2025-09-16"},{"numero":"6416","fecha":"2025-09-09"},{"numero":"7151","fecha":"2025-09-02"},{"numero":"2472","fecha":"2025-08-26"},{"numero":"8686","fecha":"2025-08-19"},{"numero":"8273","fecha":"2025-08-12"},{"numero":"7246","fecha":"2025-08-05"},{"numero":"2851","fecha":"2025-07-29"},{"numero":"1766","fecha":"2025-07-22"},{"numero":"7740","fecha":"2025-07-15"},{"numero":"7412","fecha":"2025-07-08"},{"numero":"8188","fecha":"2025-07-01"},{"numero":"6784","fecha":"2025-06-24"},{"numero":"0603","fecha":"2025-06-17"},{"numero":"8056","fecha":"2025-06-10"},{"numero":"5336","fecha":"2025-05-27"},{"numero":"1246","fecha":"2025-05-20"},{"numero":"3050","fecha":"2025-05-13"},{"numero":"0551","fecha":"2025-05-06"},{"numero":"0906","fecha":"2025-04-29"}],"Cundinamarca":[{"numero":"7056","fecha":"2026-04-27"},{"numero":"7706","fecha":"2026-04-20"},{"numero":"1409","fecha":"2026-04-13"},{"numero":"4932","fecha":"2026-04-06"},{"numero":"6683","fecha":"2026-03-30"},{"numero":"2746","fecha":"2026-03-24"},{"numero":"2758","fecha":"2026-03-16"},{"numero":"5744","fecha":"2026-03-09"},{"numero":"7346","fecha":"2026-03-02"},{"numero":"8901","fecha":"2026-02-23"},{"numero":"1790","fecha":"2026-02-16"},{"numero":"8059","fecha":"2026-02-09"},{"numero":"2883","fecha":"2026-02-02"},{"numero":"7067","fecha":"2026-01-26"},{"numero":"5040","fecha":"2026-01-19"},{"numero":"5028","fecha":"2026-01-13"},{"numero":"4291","fecha":"2026-01-05"},{"numero":"4483","fecha":"2025-12-29"},{"numero":"2244","fecha":"2025-12-22"},{"numero":"3059","fecha":"2025-12-15"},{"numero":"1488","fecha":"2025-12-09"},{"numero":"4801","fecha":"2025-12-01"},{"numero":"5144","fecha":"2025-11-24"},{"numero":"9727","fecha":"2025-11-18"},{"numero":"0201","fecha":"2025-11-10"},{"numero":"2120","fecha":"2025-11-04"},{"numero":"6717","fecha":"2025-10-27"},{"numero":"8421","fecha":"2025-10-20"},{"numero":"8568","fecha":"2025-10-14"},{"numero":"4452","fecha":"2025-10-06"},{"numero":"1544","fecha":"2025-09-29"},{"numero":"8715","fecha":"2025-09-22"},{"numero":"1205","fecha":"2025-09-15"},{"numero":"2448","fecha":"2025-09-08"},{"numero":"3343","fecha":"2025-09-01"},{"numero":"6650","fecha":"2025-08-25"},{"numero":"4457","fecha":"2025-08-19"},{"numero":"7108","fecha":"2025-08-11"},{"numero":"5797","fecha":"2025-08-04"},{"numero":"0392","fecha":"2025-07-28"},{"numero":"9198","fecha":"2025-07-21"},{"numero":"3103","fecha":"2025-07-14"},{"numero":"0992","fecha":"2025-07-07"},{"numero":"6220","fecha":"2025-07-01"},{"numero":"6642","fecha":"2025-06-24"},{"numero":"2113","fecha":"2025-06-16"},{"numero":"6601","fecha":"2025-06-09"},{"numero":"6952","fecha":"2025-06-03"},{"numero":"5153","fecha":"2025-05-26"},{"numero":"2861","fecha":"2025-05-19"}],"Tolima":[{"numero":"8142","fecha":"2026-04-13"},{"numero":"1769","fecha":"2026-04-06"},{"numero":"6680","fecha":"2026-03-30"},{"numero":"8595","fecha":"2026-03-24"},{"numero":"8397","fecha":"2026-03-16"},{"numero":"4919","fecha":"2026-03-09"},{"numero":"0926","fecha":"2026-03-02"},{"numero":"1780","fecha":"2026-02-23"},{"numero":"8267","fecha":"2026-02-16"},{"numero":"5556","fecha":"2026-02-09"},{"numero":"5418","fecha":"2026-02-02"},{"numero":"1691","fecha":"2026-01-26"},{"numero":"7096","fecha":"2026-01-19"},{"numero":"1495","fecha":"2026-01-13"},{"numero":"4308","fecha":"2026-01-05"},{"numero":"5151","fecha":"2025-12-29"},{"numero":"2451","fecha":"2025-12-22"},{"numero":"6613","fecha":"2025-12-15"},{"numero":"8889","fecha":"2025-12-09"},{"numero":"0030","fecha":"2025-12-01"},{"numero":"7801","fecha":"2025-11-24"},{"numero":"4293","fecha":"2025-11-18"},{"numero":"1911","fecha":"2025-11-10"},{"numero":"4620","fecha":"2025-11-04"},{"numero":"4820","fecha":"2025-10-27"},{"numero":"8353","fecha":"2025-10-20"},{"numero":"2241","fecha":"2025-10-14"},{"numero":"0334","fecha":"2025-10-06"},{"numero":"6996","fecha":"2025-09-29"},{"numero":"3041","fecha":"2025-09-22"},{"numero":"6198","fecha":"2025-09-15"},{"numero":"8850","fecha":"2025-09-08"},{"numero":"4556","fecha":"2025-09-01"},{"numero":"7578","fecha":"2025-08-25"},{"numero":"3737","fecha":"2025-08-19"},{"numero":"4716","fecha":"2025-08-11"},{"numero":"9340","fecha":"2025-08-04"},{"numero":"1204","fecha":"2025-07-28"},{"numero":"7140","fecha":"2025-07-21"},{"numero":"0313","fecha":"2025-07-14"},{"numero":"3004","fecha":"2025-07-07"},{"numero":"0831","fecha":"2025-07-01"},{"numero":"1873","fecha":"2025-06-24"},{"numero":"9650","fecha":"2025-06-16"},{"numero":"0446","fecha":"2025-06-09"},{"numero":"3180","fecha":"2025-06-03"},{"numero":"4977","fecha":"2025-05-26"},{"numero":"6150","fecha":"2025-05-19"},{"numero":"7872","fecha":"2025-05-12"},{"numero":"4228","fecha":"2025-05-05"}]};
+
+function cargarSemilla(){
+  // Sin control de versión — siempre sobreescribe con los datos de la semilla
+  // Esto garantiza que al actualizar la app, el historial se actualiza también
+  const h = getHist();
+  let total = 0;
+  Object.entries(SEMILLA_HISTORICO).forEach(([sorteo, registros])=>{
+    const mapa = {};
+    // Preservar registros más recientes que no están en la semilla
+    if(h[sorteo]) h[sorteo].forEach(r=>{ mapa[r.fecha]=r; });
+    // Sobreescribir con semilla (los datos de semilla tienen prioridad)
+    const ordenados=[...registros].reverse();
+    for(let i=0;i<ordenados.length;i++){
+      const r=ordenados[i];
+      const prev=ordenados[i-1];
+      const cands=prev?generarCandidatos(prev.numero):(mapa[r.fecha]?.candidatos||{});
+      mapa[r.fecha]={numero:r.numero,fecha:r.fecha,timestamp:0,candidatos:cands};
+      total++;
+    }
+    h[sorteo]=Object.values(mapa).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    if(h[sorteo].length>MAX_HIST) h[sorteo]=h[sorteo].slice(0,MAX_HIST);
+  });
+  saveHist(h);
+  // Limpiar todas las claves viejas de semilla
+  ['v1','v2','v3','v4','v5'].forEach(v=>localStorage.removeItem('oficiales_semilla_'+v));
+  console.log('Semilla cargada: '+total+' registros en '+Object.keys(SEMILLA_HISTORICO).length+' loterías');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ORDEN Y FILTROS
+// ═══════════════════════════════════════════════════════════
+const ORDEN_CHANCES = ['Dorado Mañana','Culona día','Pijao Oro','Paisita día','Chontico día','Cafeterito tarde','Sinuano día','Saman','Caribeña día','Motilón día','Fantástica día','Antioqueñita día','Dorado Tarde','Astro Sol','Dorado Noche','Paisita noche','Chontico noche','Cafeterito noche','Sinuano noche','Caribeña Noche','Motilón noche','Fantástica noche','Antioqueñita tarde','Culona noche','Astro Luna'];
+const ORDEN_LOTERIAS = ['Boyacá','Cauca','Medellín','Santander','Risaralda','Bogotá','Quindío','Valle','Meta','Manizales','Cruz Roja','Huila','Cundinamarca','Tolima'];
+const EXCLUIR = ['cash three','play four','paisita tres','paisita 3','5ta-'];
+
+function esExcluido(n){return EXCLUIR.some(e=>(n||'').toLowerCase().includes(e))}
+function esLoteria(n){const l=['boyacá','cauca','medellín','santander','risaralda','bogotá','quindío','valle','meta','manizales','cruz roja','huila','cundinamarca','tolima'];return l.some(x=>(n||'').toLowerCase().includes(x))}
+function getBadge(n){const s=(n||'').toLowerCase();if(s.includes('astro'))return{cls:'ast',txt:'ASTRO'};if(esLoteria(n))return{cls:'lot',txt:'LOTERÍA'};return{cls:'ch',txt:'CHANCE'}}
+function pad4(n){return String(((Math.round(n)%10000)+10000)%10000).padStart(4,'0')}
+function digs(s){return s.split('').map(Number)}
+
+// ═══════════════════════════════════════════════════════════
+// MÉTODOS DE ANÁLISIS — 10 métodos con diversidad forzada
+// ═══════════════════════════════════════════════════════════
+
+// Distancia dígito a dígito (posiciones distintas, máx 4)
+function distanciaDig(a,b){let d=0;for(let i=0;i<4;i++)if(a[i]!==b[i])d++;return d;}
+
+// Métodos originales conservados para compatibilidad con historial de pesos
+const METODOS = [
+  {id:'piramide',   name:'🔺 Pirámide',    fn:num=>{const d=digs(num);const n1=[(d[0]+d[1])%10,(d[1]+d[2])%10,(d[2]+d[3])%10];const n2=[(n1[0]+n1[1])%10,(n1[1]+n1[2])%10];const c=(n2[0]+n2[1])%10;return[pad4(parseInt(''+n1[0]+n1[1]+n1[2]+c)),pad4(parseInt(''+c+n1[0]+n1[1]+n1[2])),pad4(parseInt(''+n2[0]+n2[1]+c+d[0]))]}},
+  {id:'equivalencia',name:'⚖️ Equivalencia',fn:num=>{const t={0:5,1:6,2:7,3:8,4:9,5:0,6:1,7:2,8:3,9:4};const d=digs(num);return[pad4(parseInt(d.map(x=>t[x]).join(''))),pad4(parseInt(''+t[d[2]]+t[d[3]]+t[d[0]]+t[d[1]])),pad4(parseInt(''+t[d[0]]+t[d[1]]+d[2]+d[3]))]}},
+  {id:'pitagorico', name:'∑ Pitagórico',   fn:num=>{const d=digs(num);let r=d.reduce((a,b)=>a+b,0);while(r>9)r=String(r).split('').map(Number).reduce((a,b)=>a+b,0);return[pad4(parseInt(num)+r*111),pad4(parseInt(num)+r*1111),pad4(parseInt(num)-r*111)]}},
+  {id:'lunar',      name:'🌙 Lunar',        fn:num=>{const h=new Date();const f=Math.round(((h.getTime()-new Date(2000,0,6).getTime())/(1000*60*60*24)%29.53)*10/29.53);return[pad4((parseInt(num)+f*137)%10000),pad4((parseInt(num)+h.getDate()*(h.getMonth()+1))%10000),pad4((parseInt(num)+f*h.getDate())%10000)]}},
+  {id:'modular',    name:'🔢 Modular',      fn:num=>{const d=digs(num),p=[3,7,11,13];return[pad4(parseInt(d.map((x,i)=>(x*p[i])%10).join(''))),pad4(parseInt(d.map((x,i)=>(x*p[3-i]+p[i])%10).join(''))),pad4(((d[0]*3+d[1]*7)%100)*100+((d[2]*11+d[3]*13)%100))]}},
+];
+
+// ── Markov O1: siguiente dígito por posición ──────────────
+function getMarkovO1(sorteo,ultimoNum){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<4) return null;
+  const trans=[0,1,2,3].map(pos=>{
+    const freq={};
+    for(let i=0;i<regs.length-1;i++){
+      const desde=regs[i+1].numero[pos];
+      const hacia=regs[i].numero[pos];
+      if(desde===ultimoNum[pos]) freq[hacia]=(freq[hacia]||0)+1;
+    }
+    if(!Object.keys(freq).length){
+      const f2={};
+      regs.forEach(r=>{f2[r.numero[pos]]=(f2[r.numero[pos]]||0)+1;});
+      return Object.entries(f2).sort((a,b)=>b[1]-a[1])[0]?.[0]||'0';
+    }
+    return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+  });
+  return trans.join('');
+}
+
+// ── Markov O2: par de 2 últimos números ───────────────────
+function getMarkovO2(sorteo,ultimoNum,prevNum){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<6||!prevNum) return null;
+  const clave=prevNum+ultimoNum;
+  const freq={};
+  for(let i=0;i<regs.length-2;i++){
+    const par=regs[i+2].numero+regs[i+1].numero;
+    if(par===clave) freq[regs[i].numero]=(freq[regs[i].numero]||0)+1;
+  }
+  if(!Object.keys(freq).length) return null;
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+}
+
+// ── Ciclos: ciclo dominante en historial ──────────────────
+function getCiclo(sorteo,ultimoNum){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<8) return null;
+  const ciclos=[3,5,7,10,14];
+  let mejorCiclo=null,mejorSim=0;
+  ciclos.forEach(c=>{
+    if(regs.length<=c) return;
+    const sim=4-distanciaDig(regs[c].numero,ultimoNum);
+    if(sim>mejorSim){mejorSim=sim;mejorCiclo=c;}
+  });
+  if(!mejorCiclo||mejorSim<2) return null;
+  const tard=calcTardanza(sorteo);
+  const base=regs[mejorCiclo-1]?.numero||regs[0].numero;
+  if(!tard) return base;
+  const digTop=tard.tardanzaPos.map(l=>l[0]?.[0]||null);
+  const tardMax=tard.tardanzaPos.map((l,p)=>({p,t:l[0]?.[1]||0})).sort((a,b)=>b.t-a.t);
+  let res=base.split('');
+  tardMax.slice(0,2).forEach(({p})=>{if(digTop[p]) res[p]=digTop[p];});
+  return res.join('');
+}
+
+// ── Entropía: dígitos más subrepresentados ────────────────
+function getEntropia(sorteo){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<5) return null;
+  const result=[0,1,2,3].map(pos=>{
+    const freq={};
+    for(let d=0;d<=9;d++) freq[String(d)]=0;
+    regs.forEach(r=>{freq[r.numero[pos]]=(freq[r.numero[pos]]||0)+1;});
+    const esperado=regs.length*0.1;
+    return Object.entries(freq)
+      .map(([d,f])=>({d,deficit:esperado-f}))
+      .sort((a,b)=>b.deficit-a.deficit)[0].d;
+  });
+  return result.join('');
+}
+
+// ── Tardanza Pura: dígito más tardado por posición ────────
+function getTardanzaPura(sorteo){
+  const tard=calcTardanza(sorteo);
+  if(!tard) return null;
+  return tard.tardanzaPos.map(l=>l[0]?.[0]||'0').join('');
+}
+
+function scoreV(s,max){return Math.min(100,Math.round(s/(max||1)*100))}
+
+// ═══════════════════════════════════════════════════════════
+// MOTOR PRINCIPAL — 10 candidatos con diversidad forzada
+// ═══════════════════════════════════════════════════════════
+function getTop10(sorteo,num){
+  const regs=(getHist()[sorteo]||[]);
+  const prevNum=regs[1]?.numero||null;
+  const resultado=getPesos(sorteo);
+
+  // Pool base de métodos originales
+  const pool={};
+  METODOS.forEach(m=>{
+    const peso=resultado?(resultado.pesos[m.id]):(1/METODOS.length);
+    m.fn(num).forEach(c=>{
+      if(!pool[c]) pool[c]={score:0};
+      pool[c].score+=peso;
+    });
+  });
+  const rezago=calcRezago(sorteo);
+  if(rezago) rezago.forEach(([n,i])=>{if(pool[n]) pool[n].score+=Math.min(0.25,i*0.025);});
+  const poolOrdenado=Object.entries(pool).sort((a,b)=>b[1].score-a[1].score).map(([n])=>n);
+
+  // Nuevos métodos avanzados
+  const m1=getMarkovO1(sorteo,num);
+  const m2=getMarkovO2(sorteo,num,prevNum);
+  const mc=getCiclo(sorteo,num);
+  const me=getEntropia(sorteo);
+  const mt=getTardanzaPura(sorteo);
+  const cr=getCruzado(sorteo,num);
+  const cv=getConvergencia(sorteo,num);
+
+  // Lista de candidatos brutos en orden de prioridad
+  const brutos=[
+    {num:m1,          label:'🔵 Markov O1'},
+    {num:m2,          label:'🔵 Markov O2'},
+    {num:mc,          label:'🔄 Ciclos'},
+    {num:me,          label:'📊 Entropía'},
+    {num:mt,          label:'⏱️ Tardanza'},
+    {num:cr?.num,     label:'🔀 Cruzado'},
+    {num:cv?.num,     label:'⚡ Convergencia'},
+    {num:poolOrdenado[0], label:'🟢 Ensamble'},
+    ...poolOrdenado.slice(1,8).map((n,i)=>({num:n,label:`⭐ Top${i+2}`})),
+  ].filter(c=>c.num&&c.num.length===4);
+
+  // Filtro anti-similitud: ≥2 posiciones distintas al último Y entre candidatos
+  const finales=[];
+  const usados=new Set();
+  // Pasada 1: filtro estricto (≥2 dist al último Y ≥2 entre candidatos)
+  for(const c of brutos){
+    if(finales.length>=10) break;
+    if(usados.has(c.num)) continue;
+    if(distanciaDig(c.num,num)<2) continue;
+    if(finales.some(f=>distanciaDig(c.num,f.num)<2)) continue;
+    finales.push(c); usados.add(c.num);
+  }
+  // Pasada 2: solo anti-último (relajar filtro entre candidatos si faltan)
+  for(const c of brutos){
+    if(finales.length>=10) break;
+    if(usados.has(c.num)) continue;
+    if(distanciaDig(c.num,num)<2) continue;
+    finales.push(c); usados.add(c.num);
+  }
+  return finales;
+}
+
+// Alias para compatibilidad con otras partes del código
+function getTop5(sorteo,num){
+  return getTop10(sorteo,num).slice(0,5).map((c,i)=>({num:c.num,score:0.9-(i*0.1)}));
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORIAL — localStorage
+// ═══════════════════════════════════════════════════════════
+function getHist(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch(e){return{}}}
+function saveHist(h){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(h))}catch(e){}}
+
+// Limpia duplicados del historial: mismo número en fechas contiguas (hoy/ayer)
+// y entradas con fechas no-ISO (ej. "sábado 02/05/2026")
+function limpiarHistorial(){
+  const h=getHist();
+  let cambios=0;
+  Object.keys(h).forEach(sorteo=>{
+    // 1. Eliminar fechas no ISO
+    const antes=h[sorteo].length;
+    h[sorteo]=h[sorteo].filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.fecha));
+    cambios+=antes-h[sorteo].length;
+
+    // 2. Eliminar duplicados exactos fecha+numero
+    const vistas=new Set();
+    h[sorteo]=h[sorteo].filter(r=>{
+      const key=`${r.fecha}|${r.numero}`;
+      if(vistas.has(key)){cambios++;return false;}
+      vistas.add(key);return true;
+    });
+
+    // 3. Eliminar consecutivos con mismo número (dejar solo el más antiguo)
+    h[sorteo]=h[sorteo].filter((r,i,arr)=>{
+      if(i===arr.length-1) return true; // último siempre queda
+      if(r.numero===arr[i+1].numero){cambios++;return false;} // borra el más reciente
+      return true;
+    });
+
+    // 4. Orden descendente por fecha
+    h[sorteo].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  });
+  if(cambios>0){saveHist(h);console.log(`Limpiados: ${cambios}`);}
+}
+
+function registrarResultado(sorteo, numero, fecha, candidatos){
+  const h=getHist();
+  if(!h[sorteo]) h[sorteo]=[];
+  // No guardar si ya existe esa fecha
+  if(h[sorteo].find(r=>r.fecha===fecha)) return false;
+  // No guardar si el número más reciente es exactamente el mismo
+  // (astroluna muestra el resultado de ayer mientras hoy no ha jugado)
+  if(h[sorteo][0]?.numero===numero) return false;
+  h[sorteo].unshift({numero, fecha, timestamp:Date.now(), candidatos:candidatos||{}});
+  if(h[sorteo].length>MAX_HIST) h[sorteo]=h[sorteo].slice(0,MAX_HIST);
+  saveHist(h);
+  return true;
+}
+
+function generarCandidatos(num){
+  const c={};
+  METODOS.forEach(m=>{c[m.id]=m.fn(num);});
+  return c;
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVALUADOR DE MÉTODOS
+// ═══════════════════════════════════════════════════════════
+function evaluarMetodos(sorteo){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<2) return null;
+  const scores={};
+  METODOS.forEach(m=>{scores[m.id]={hits:0,total:0,pct:0}});
+  for(let i=0;i<regs.length-1;i++){
+    const actual=regs[i].numero;
+    const ant=regs[i+1];
+    if(!ant.candidatos) continue;
+    METODOS.forEach(m=>{
+      const c=ant.candidatos[m.id]||[];
+      scores[m.id].total++;
+      if(c.includes(actual)) scores[m.id].hits++;
+    });
+  }
+  METODOS.forEach(m=>{if(scores[m.id].total>0) scores[m.id].pct=Math.round(scores[m.id].hits/scores[m.id].total*100)});
+  return scores;
+}
+
+function getPesos(sorteo){
+  const sc=evaluarMetodos(sorteo);
+  if(!sc) return null;
+  const total=METODOS.reduce((s,m)=>s+(sc[m.id].pct||1),0)||1;
+  const pesos={};
+  METODOS.forEach(m=>{pesos[m.id]=(sc[m.id].pct||1)/total});
+  return{pesos,scores:sc};
+}
+
+// ═══════════════════════════════════════════════════════════
+// FRECUENCIA Y REZAGO
+// ═══════════════════════════════════════════════════════════
+function calcFreq(sorteo,dias=60){
+  const regs=(getHist()[sorteo]||[]).slice(0,dias);
+  if(!regs.length) return null;
+  const freq={};
+  regs.forEach(r=>{freq[r.numero]=(freq[r.numero]||0)+1});
+  const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+  return{sorted,max:sorted[0]?.[1]||1,total:regs.length};
+}
+
+function calcRezago(sorteo){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<5) return null;
+  const ultima={};
+  regs.forEach((r,i)=>{if(!ultima[r.numero]) ultima[r.numero]=i});
+  return Object.entries(ultima).filter(([,i])=>i>=3).sort((a,b)=>b[1]-a[1]).slice(0,10);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOP 5 INTELIGENTE
+// ═══════════════════════════════════════════════════════════
+function getTop5(sorteo, num){
+  const res=getPesos(sorteo);
+  const freq=calcFreq(sorteo,60);
+  const rezago=calcRezago(sorteo);
+  const map={};
+  METODOS.forEach(m=>{
+    const cands=m.fn(num);
+    const peso=res?(res.pesos[m.id]):(1/METODOS.length);
+    cands.forEach(c=>{
+      if(!map[c]) map[c]={score:0};
+      map[c].score+=peso;
+    });
+  });
+  if(rezago) rezago.forEach(([n,i])=>{if(map[n]) map[n].score+=Math.min(0.3,i*0.03)});
+  if(freq) freq.sorted.slice(0,5).forEach(([n])=>{if(map[n]) map[n].score*=0.85});
+  return Object.entries(map).sort((a,b)=>b[1].score-a[1].score).slice(0,5).map(([n,d])=>({num:n,score:d.score}));
+}
+
+function scoreV(s,max){return Math.min(100,Math.round(s/(max||1)*100))}
+
+// ═══════════════════════════════════════════════════════════
+// MÉTODOS COMBINADOS
+// ═══════════════════════════════════════════════════════════
+
+// 🔀 CRUZADO: toma candidatos del Top5 y sube los que tienen
+//    más dígitos coincidentes con los más tardados por posición
+function getCruzado(sorteo, num){
+  const tard = calcTardanza(sorteo);
+  const top5 = getTop5(sorteo, num);
+
+  if(!tard || top5.length===0) return null;
+
+  // Dígito más tardado por cada posición
+  const digTop = tard.tardanzaPos.map(lista => lista[0]?.[0] || null);
+
+  // Puntuar cada candidato del top5 por cuántas posiciones
+  // coinciden con el dígito más tardado
+  const scored = top5.map(t => {
+    let cruces = 0;
+    for(let p=0;p<4;p++){
+      if(digTop[p] && t.num[p] === digTop[p]) cruces++;
+    }
+    return {...t, cruces};
+  }).sort((a,b) => b.cruces - a.cruces || b.score - a.score);
+
+  // El ganador del cruce es el que más posiciones tardadas tiene
+  const ganador = scored[0];
+  // Solo retornar si hay al menos 1 cruce real; si no, construir
+  // un número híbrido: 2 dígitos del mejor candidato + 2 de tardanza
+  if(ganador.cruces >= 1) return {num: ganador.num, cruces: ganador.cruces};
+
+  // Sin cruces: armar híbrido con las 2 posiciones más tardadas de digTop
+  // y las 2 restantes del mejor candidato
+  const tardMax = tard.tardanzaPos.map((lista,p)=>({p, tard:lista[0]?.[1]||0}))
+    .sort((a,b)=>b.tard-a.tard);
+  const posTard = new Set(tardMax.slice(0,2).map(x=>x.p));
+  let hibrido = '';
+  for(let p=0;p<4;p++){
+    hibrido += posTard.has(p) ? (digTop[p]||'0') : ganador.num[p];
+  }
+  return {num: hibrido, cruces: 0};
+}
+
+// ⚡ CONVERGENCIA: busca el número que aparece en MÁS métodos
+//    a la vez (sin pesos), luego desempata por tardanza de dígitos
+function getConvergencia(sorteo, num){
+  const tard = calcTardanza(sorteo);
+
+  // Contar en cuántos métodos aparece cada candidato
+  const conteo = {};
+  METODOS.forEach(m => {
+    m.fn(num).forEach(c => { conteo[c] = (conteo[c]||0) + 1; });
+  });
+
+  // Ordenar por apariciones, desempatando con tardanza de dígitos
+  const candidatos = Object.entries(conteo).sort((a,b) => {
+    if(b[1] !== a[1]) return b[1] - a[1];
+    // desempate: más dígitos tardados gana
+    const puntTard = n => {
+      if(!tard) return 0;
+      return [0,1,2,3].reduce((s,p) => {
+        const idx = tard.tardanzaPos[p].findIndex(([d])=>d===n[p]);
+        return s + (idx === 0 ? 3 : idx === 1 ? 1 : 0); // top1=3pts, top2=1pt
+      }, 0);
+    };
+    return puntTard(a[0]) - puntTard(b[0]);
+  });
+
+  const ganador = candidatos[0];
+  if(!ganador) return null;
+
+  // No repetir si ya está en el Top5 — buscar el siguiente
+  const top5nums = getTop5(sorteo, num).map(t=>t.num);
+  const unico = candidatos.find(([n]) => !top5nums.includes(n));
+  if(unico) return {num: unico[0], apariciones: unico[1]};
+  return {num: ganador[0], apariciones: ganador[1]};
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCRAPING HISTÓRICO — resultadodelaloteria.com
+// ═══════════════════════════════════════════════════════════
+let cargandoHistorico = false;
+
+async function fetchConProxy(url){
+  const PROXIES=[
+    ()=>fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(12000)}).then(r=>r.json()).then(j=>j.contents),
+    ()=>fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(12000)}).then(r=>r.text()),
+    ()=>fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(12000)}).then(r=>r.text()),
+  ];
+  for(const proxy of PROXIES){
+    try{const r=await proxy();if(r&&r.length>200) return r;}catch(e){}
+  }
+  return null;
+}
+
+// Meses en español para parsear fechas de chancehoy.com
+const MESES_ES = {
+  'enero':'01','febrero':'02','marzo':'03','abril':'04','mayo':'05','junio':'06',
+  'julio':'07','agosto':'08','septiembre':'09','octubre':'10','noviembre':'11','diciembre':'12'
+};
+
+// Parsea la tabla de últimos 20 sorteos de chancehoy.com/sorteo/<slug>/
+// Formato: <td>AYER SÁBADO 02 DE MAYO DE 2026</td><td>0745 5</td>
+function parsearHistorico(html){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(html,'text/html');
+  const filas=doc.querySelectorAll('table tr');
+  const resultados=[];
+  filas.forEach(fila=>{
+    const celdas=fila.querySelectorAll('td');
+    if(celdas.length>=2){
+      const fechaTxt=(celdas[0].textContent||'').trim().toUpperCase();
+      const numTxt=(celdas[1].textContent||'').trim();
+
+      // Extraer número de 4 dígitos (ignorar la quinta si la hay: "0745 5")
+      const numM=numTxt.match(/\b(\d{4})\b/);
+
+      // Extraer fecha: "02 DE MAYO DE 2026"
+      const fechaM=fechaTxt.match(/(\d{1,2})\s+DE\s+(\w+)\s+DE\s+(\d{4})/);
+
+      if(numM&&fechaM){
+        const d=fechaM[1].padStart(2,'0');
+        const mesKey=fechaM[2].toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,''); // quitar tildes
+        const m=MESES_ES[mesKey]||null;
+        const y=fechaM[3];
+        if(m) resultados.push({numero:numM[1], fecha:`${y}-${m}-${d}`});
+      }
+    }
+  });
+  return resultados;
+}
+
+async function actualizarHistoricoSorteo(nombre, urlSlug, logFn){
+  const url=BASE_HIST+urlSlug+'/';
+  const html=await fetchConProxy(url);
+  if(!html){logFn(`⚠️ Sin respuesta: ${nombre}`);return 0}
+  const resultados=parsearHistorico(html);
+  if(!resultados.length){logFn(`⚠️ Sin datos: ${nombre}`);return 0}
+  let nuevos=0;
+  // Registrar de más antiguo a más reciente para que candidatos sean coherentes
+  const ordenados=[...resultados].reverse();
+  for(let i=0;i<ordenados.length;i++){
+    const r=ordenados[i];
+    // Candidatos generados del resultado ANTERIOR (si existe)
+    const prev=ordenados[i-1];
+    const cands=prev?generarCandidatos(prev.numero):{};
+    const ok=registrarResultado(nombre,r.numero,r.fecha,cands);
+    if(ok) nuevos++;
+  }
+  logFn(`✅ ${nombre}: +${nuevos} nuevos (${resultados.length} obtenidos)`);
+  return nuevos;
+}
+
+async function actualizarTodoElHistorico(){
+  if(cargandoHistorico) return;
+  cargandoHistorico=true;
+
+  const btn=document.getElementById('btn-hist-update');
+  if(btn){btn.disabled=true;btn.classList.add('cargando');btn.innerHTML='⏳ Descargando histórico...';}
+
+  // Mostrar progress card
+  const progressEl=document.getElementById('progress-hist');
+  if(progressEl){progressEl.style.display='block';}
+
+  const sorteos=Object.entries(SORTEO_URL);
+  let procesados=0, totalNuevos=0;
+
+  for(const [nombre,slug] of sorteos){
+    const pct=Math.round((procesados/sorteos.length)*100);
+    const barEl=document.getElementById('hist-bar');
+    const logEl=document.getElementById('hist-log');
+    if(barEl) barEl.style.width=pct+'%';
+
+    const logFn=(msg)=>{
+      if(logEl){
+        logEl.innerHTML+=msg+'<br>';
+        logEl.scrollTop=logEl.scrollHeight;
+      }
+    };
+
+    const nuevos=await actualizarHistoricoSorteo(nombre,slug,logFn);
+    totalNuevos+=nuevos;
+    procesados++;
+
+    // Pausa breve para no saturar proxies
+    await new Promise(r=>setTimeout(r,400));
+  }
+
+  // Barra al 100%
+  const barEl=document.getElementById('hist-bar');
+  if(barEl) barEl.style.width='100%';
+
+  const logEl=document.getElementById('hist-log');
+  if(logEl) logEl.innerHTML+=`<br>🎉 Listo. ${totalNuevos} registros nuevos guardados.`;
+
+  if(btn){
+    btn.disabled=false;
+    btn.classList.remove('cargando');
+    btn.innerHTML='🔄 Actualizar histórico (últimos 10 por sorteo)';
+  }
+
+  cargandoHistorico=false;
+
+  // Refrescar stats después de cargar
+  setTimeout(()=>renderHistorialPanel(), 800);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CARGA DATOS DEL DÍA (astroluna.co)
+// ═══════════════════════════════════════════════════════════
+let datosGlobales={chances:[],loterias:[]};
+
+async function cargarDatos(){
+  
+  document.getElementById('lista-loterias').innerHTML='<div class="loading"><span class="spinner">⚙️</span>Cargando loterías...</div>';
+  
+  document.getElementById('estado-loterias').textContent='Consultando...';
+
+  const hoy=new Date();
+  const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('fecha-header').textContent=`${dias[hoy.getDay()]} ${hoy.getDate()} de ${meses[hoy.getMonth()]}`;
+  // Timestamp de última actualización
+  const hh=String(hoy.getHours()).padStart(2,'0');
+  const mm=String(hoy.getMinutes()).padStart(2,'0');
+  document.getElementById('ultima-actualizacion').textContent=`Actualizado ${hh}:${mm}`;
+
+  const TARGET='https://www.astroluna.co/resultados-loterias-chance';
+  const htmlData=await fetchConProxy(TARGET);
+
+  if(!htmlData){
+    const err=`<div class="error-card"><p>⚠️ No se pudo conectar.<br>Verifica tu internet e intenta de nuevo.</p><button class="btn-retry" onclick="cargarDatos()">↻ REINTENTAR</button></div>`;
+    document.getElementById('lista-chances').innerHTML=err;
+    document.getElementById('lista-loterias').innerHTML=err;
+    
+    document.getElementById('estado-loterias').textContent='Sin conexión';
+    return;
+  }
+
+  try{
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(htmlData,'text/html');
+    const filas=doc.querySelectorAll('table tr');
+    const todos=[];
+    filas.forEach(f=>{
+      const c=f.querySelectorAll('td');
+      if(c.length>=3){
+        const nombre=(c[0].textContent||'').trim();
+        const resultado=(c[1].textContent||'').trim();
+        const serie=(c[2].textContent||'').trim();
+        const fecha=(c[3]?c[3].textContent:'').trim();
+        if(nombre&&resultado&&!esExcluido(nombre)&&resultado.length===4&&/^\d{4}$/.test(resultado))
+          todos.push({nombre,resultado,serie,fecha});
+      }
+    });
+
+    const chances=todos.filter(r=>!esLoteria(r.nombre));
+    const loterias=todos.filter(r=>esLoteria(r.nombre));
+
+    function ordenar(lista,orden){
+      const out=[];
+      orden.forEach(o=>{const f=lista.find(r=>r.nombre.toLowerCase().includes(o.toLowerCase().split(' ')[0]));if(f) out.push(f)});
+      lista.forEach(r=>{if(!out.find(o=>o.nombre===r.nombre)) out.push(r)});
+      return out;
+    }
+
+    datosGlobales.chances=ordenar(chances,ORDEN_CHANCES);
+    datosGlobales.loterias=ordenar(loterias,ORDEN_LOTERIAS);
+
+    // Auto-guardar resultado de hoy
+    const fechaHoy=new Date().toISOString().slice(0,10);
+    [...datosGlobales.chances,...datosGlobales.loterias].forEach(r=>{
+      registrarResultado(r.nombre,r.resultado,fechaHoy,generarCandidatos(r.resultado));
+    });
+
+    renderLoterias();
+    // Refrescar Doble Chance si está visible
+    if(document.getElementById('panel-doble').style.display==='block') renderDobleChance();
+  }catch(e){
+    const err=`<div class="error-card"><p>⚠️ Error al procesar datos.</p><button class="btn-retry" onclick="cargarDatos()">↻ Reintentar</button></div>`;
+    document.getElementById('lista-chances').innerHTML=err;
+    document.getElementById('lista-loterias').innerHTML=err;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER LISTAS
+// ═══════════════════════════════════════════════════════════
+function renderChances(){
+  const el=document.getElementById('lista-chances');
+  const data=datosGlobales.chances;
+  if(!data.length){el.innerHTML='<div class="error-card"><p>⚠️ Sin chances disponibles aún.</p></div>';return}
+  document.getElementById('estado-chances').textContent=`${data.length} sorteos disponibles`;
+  let html=data.map(itemHTML).join('');
+  html+=`<div class="aviso">Fuente: astroluna.co</div>`;
+  el.innerHTML=html;
+}
+
+function renderLoterias(){
+  const el=document.getElementById('lista-loterias');
+  const data=datosGlobales.loterias;
+  if(!data.length){el.innerHTML='<div class="error-card"><p>⚠️ Sin loterías disponibles.</p></div>';document.getElementById('estado-loterias').textContent='Sin datos';return}
+  document.getElementById('estado-loterias').textContent=`${data.length} loterías disponibles`;
+  let html=`<div class="seccion-titulo">🏆 LOTERÍAS <span class="sec-count">${data.length}</span></div>`;
+  html+=data.map(itemHTML).join('');
+  html+=`<div class="aviso">Fuente: astroluna.co · Histórico: chancehoy.com</div>`;
+  el.innerHTML=html;
+}
+
+function itemHTML(r){
+  const b=getBadge(r.nombre);
+  const serie=r.serie&&r.serie!=='null'&&r.serie!==''?` · Serie ${r.serie}`:'';
+  const nReg=(getHist()[r.nombre]||[]).length;
+  // Calcular Top1 candidato si hay suficientes datos
+  let top1html='';
+  if(nReg>=3){
+    const top=getTop10(r.nombre,r.resultado);
+    if(top.length>0){
+      top1html=`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        <div class="si-num">${r.resultado}</div>
+        <span class="si-badge ${b.cls}">${b.txt}</span>
+        <div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">candidato #1</div>
+        <div style="font-family:'Oswald',sans-serif;font-size:14px;color:#6366f1;letter-spacing:2px;font-weight:700">${top[0].num}</div>
+      </div>`;
+    }
+  }
+  if(!top1html){
+    top1html=`<div class="si-right">
+      <div class="si-num">${r.resultado}</div>
+      <span class="si-badge ${b.cls}">${b.txt}</span>
+    </div>`;
+  }
+  return `<div class="sorteo-item" onclick="abrirModal('${r.nombre.replace(/'/g,"\\'")}','${r.resultado}','${r.fecha}')">
+    <div class="si-left">
+      <div class="si-nombre">${r.nombre}${nReg>=3?`<span class="badge-new">📊${nReg}</span>`:''}</div>
+      <div class="si-info">${r.fecha}${serie}</div>
+    </div>
+    ${top1html}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+let mState={nombre:'',num:'',fecha:''};
+
+function abrirModal(nombre,num,fecha){
+  mState={nombre,num,fecha};
+  document.getElementById('modal-nombre').textContent=nombre;
+  document.getElementById('modal-num').textContent=num;
+  document.getElementById('modal-fecha').textContent=fecha||'';
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  renderCandidatos(nombre,num);
+  document.getElementById('modal').classList.add('show');
+  actualizarAnalisis(nombre,num);
+}
+
+function switchModalTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='candidatos') renderCandidatos(mState.nombre,mState.num);
+  else if(tab==='frecuencia') renderFrecuencia(mState.nombre);
+  else if(tab==='tardanza') renderTardanza(mState.nombre);
+  else if(tab==='historial') renderHistorialModal(mState.nombre);
+}
+
+function renderFrecuencia(sorteo){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<3){
+    document.getElementById('modal-body').innerHTML=`<div class="empty-analisis"><span class="empty-icon">📈</span><p>Mínimo 3 registros para ver frecuencias.</p></div>`;
+    return;
+  }
+
+  // Frecuencia de dígito por posición
+  const posFreq=[0,1,2,3].map(pos=>{
+    const freq={};
+    for(let d=0;d<=9;d++) freq[String(d)]=0;
+    regs.forEach(r=>{freq[r.numero[pos]]++;});
+    const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+    const max=sorted[0][1]||1;
+    return{sorted,max};
+  });
+
+  // Frecuencia de número completo (top 10)
+  const numFreq={};
+  regs.forEach(r=>{numFreq[r.numero]=(numFreq[r.numero]||0)+1;});
+  const topNums=Object.entries(numFreq).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxN=topNums[0]?.[1]||1;
+
+  let html=`<div class="mini-stats">
+    <div class="mini-stat"><div class="mini-stat-val">${regs.length}</div><div class="mini-stat-lbl">Registros</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${Object.keys(numFreq).length}</div><div class="mini-stat-lbl">Únicos</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${topNums[0]?.[0]||'—'}</div><div class="mini-stat-lbl">Más frecuente</div></div>
+  </div>`;
+
+  // Mapa de calor de dígitos por posición
+  html+=`<div class="hist-card"><h3>🔥 Calor de dígitos por posición</h3>
+  <p style="font-size:10px;color:#6b7280;margin-bottom:10px">Frecuencia de cada dígito (0-9) en cada posición del número</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+
+  const posLabels=['1ª','2ª','3ª','4ª'];
+  posFreq.forEach(({sorted,max},pos)=>{
+    html+=`<div style="background:#0f0f0f;border-radius:10px;padding:10px;border:1px solid #222">
+      <div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:6px;text-transform:uppercase">${posLabels[pos]} cifra</div>`;
+    sorted.forEach(([dig,cnt])=>{
+      const pct=Math.round(cnt/max*100);
+      const heat=pct>=80?'#ef4444':pct>=60?'#f97316':pct>=40?'#eab308':pct>=20?'#3b82f6':'#374151';
+      html+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+        <span style="font-family:'Oswald',sans-serif;font-size:14px;color:${pct>=80?'#ef4444':'#9ca3af'};width:14px;text-align:center;font-weight:700">${dig}</span>
+        <div style="flex:1;background:#1a1a1a;border-radius:3px;height:9px">
+          <div style="width:${Math.max(3,pct)}%;height:100%;background:${heat};border-radius:3px"></div>
+        </div>
+        <span style="font-size:10px;color:#4b5563;width:18px;text-align:right">${cnt}</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div></div>`;
+
+  // Top 10 números más frecuentes
+  html+=`<div class="hist-card"><h3>📊 Números más repetidos</h3>`;
+  topNums.forEach(([n,cnt],i)=>{
+    const pct=Math.round(cnt/maxN*100);
+    html+=`<div class="freq-row">
+      <span class="freq-num">${n}</span>
+      <div class="freq-bar-wrap"><div class="freq-bar ${i===0?'hot':'cold'}" style="width:${pct}%"></div></div>
+      <span class="freq-count">${cnt}x</span>
+    </div>`;
+  });
+  html+=`</div><div class="aviso">⚠️ La frecuencia pasada no predice el futuro.</div>`;
+  document.getElementById('modal-body').innerHTML=html;
+}
+
+function renderCandidatos(sorteo,num){
+  const top10=getTop10(sorteo,num);
+  const res=getPesos(sorteo);
+  const nReg=(getHist()[sorteo]||[]).length;
+
+  // Colores por tipo de método
+  const colorMap={
+    '🔵':'#3b5bdb','🔄':'#0891b2','📊':'#7c3aed','⏱️':'#b45309',
+    '🔀':'#0f766e','⚡':'#c2410c','🟢':'#166534','⭐':'#1e3a5f'
+  };
+
+  let html=`<div class="top-card">
+    <div class="top-title">⭐ TOP 10 CANDIDATOS</div>
+    <div class="top-sub">Basado en ${nReg} registros · ${sorteo}</div>
+  </div>`;
+
+  // Lista detallada en lugar de solo números
+  html+=`<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">`;
+  top10.forEach((c,i)=>{
+    const icon=c.label.split(' ')[0];
+    const labelText=c.label.replace(icon,'').trim();
+    const bg=colorMap[icon]||'#1e3a5f';
+    const isTop3=i<3;
+    html+=`<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,${bg}22,${bg}11);border:1px solid ${bg}66;border-radius:12px;padding:10px 14px;">
+      <div style="font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:${bg === '#1e3a5f'?'#93c5fd':'#fff'};opacity:0.9;flex:1;min-width:0">
+        <span style="font-size:13px">${icon}</span> ${labelText}
+      </div>
+      <div style="font-family:'Oswald',sans-serif;font-size:${isTop3?'26px':'22px'};font-weight:700;letter-spacing:4px;color:${isTop3?'#fbbf24':'#cbd5e1'}">${c.num}</div>
+      ${isTop3?`<div style="background:#fbbf2422;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:900;color:#fbbf24">#${i+1}</div>`:''}
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // Barra de calidad del análisis
+  const quality=Math.min(100,Math.round(nReg/60*100));
+  const qualColor=quality>=70?'#22c55e':quality>=30?'#f59e0b':'#ef4444';
+  html+=`<div style="background:#111;border-radius:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #222">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:10px;font-weight:700;color:${qualColor};text-transform:uppercase;letter-spacing:1px">Calidad del análisis</span>
+      <span style="font-size:11px;font-weight:900;color:${qualColor}">${quality}%</span>
+    </div>
+    <div style="background:#222;border-radius:4px;height:6px;overflow:hidden">
+      <div style="width:${quality}%;height:100%;background:${qualColor};border-radius:4px;transition:width 0.5s"></div>
+    </div>
+    <div style="font-size:9px;color:#4b5563;margin-top:5px">${nReg<10?`Solo ${nReg} registros — mejora con más días de uso`:nReg<30?`${nReg} registros — análisis en desarrollo`:`${nReg} registros — análisis robusto`}</div>
+  </div>`;
+
+  html+=`<button onclick="copiarCandidatos()" style="display:block;width:100%;margin-bottom:10px;padding:12px;background:linear-gradient(135deg,#0f2e1a,#0f3a1a);border:1px solid #166534;border-radius:12px;color:#86efac;font-size:13px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;letter-spacing:1px;">
+    📋 COPIAR NÚMEROS
+  </button>`;
+  html+=`<div class="aviso">⚠️ Solo entretenimiento. El azar no tiene memoria.</div>`;
+  document.getElementById('modal-body').innerHTML=html;
+}
+
+function copiarCandidatos(){
+  const top10=getTop10(mState.nombre,mState.num);
+  const texto=`🎯 ${mState.nombre} — Candidatos para el próximo sorteo:\n`+top10.map((c,i)=>`${i+1}. ${c.num} — ${c.label}`).join('\n')+`\n\n📅 Basado en resultado: ${mState.num} (${mState.fecha})\n⚠️ Solo estadística, no garantiza resultados.`;
+  navigator.clipboard.writeText(texto).then(()=>{
+    const btn=document.querySelector('[onclick="copiarCandidatos()"]');
+    if(btn){btn.textContent='✅ ¡Copiado!';btn.style.color='#4ade80';setTimeout(()=>{btn.innerHTML='📋 COPIAR NÚMEROS';btn.style.color='#86efac';},2000);}
+  }).catch(()=>alert('No se pudo copiar. Selecciona los números manualmente.'));
+}
+
+// Calcula tardanza por número completo Y por dígito en cada posición
+function calcTardanza(sorteo){
+  const regs=(getHist()[sorteo]||[]);
+  if(regs.length<3) return null;
+
+  // — Tardanza de número completo (sorteos desde última aparición) —
+  const ultimaNum={};
+  regs.forEach((r,i)=>{ if(!(r.numero in ultimaNum)) ultimaNum[r.numero]=i; });
+  const tardanzaNums = Object.entries(ultimaNum)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,15);
+
+  // — Tardanza de dígito por posición (0..9 en pos 0..3) —
+  // Para cada posición, ¿cuántos sorteos lleva sin salir cada dígito?
+  const tardanzaPos = [0,1,2,3].map(pos=>{
+    const ultimaDig={};
+    regs.forEach((r,i)=>{
+      const d=r.numero[pos];
+      if(!(d in ultimaDig)) ultimaDig[d]=i;
+    });
+    // Dígitos que nunca salieron en el historial = tardanza máxima+1
+    for(let d=0;d<=9;d++){
+      const k=String(d);
+      if(!(k in ultimaDig)) ultimaDig[k]=regs.length;
+    }
+    return Object.entries(ultimaDig).sort((a,b)=>b[1]-a[1]);
+  });
+
+  return {tardanzaNums, tardanzaPos, total:regs.length};
+}
+
+function renderTardanza(sorteo){
+  const t=calcTardanza(sorteo);
+  if(!t){
+    document.getElementById('modal-body').innerHTML=`<div class="empty-analisis"><span class="empty-icon">⏱️</span><p>Mínimo 3 registros para calcular tardanzas.<br>Abre la app cada día para acumular historial.</p></div>`;
+    return;
+  }
+
+  let html=`<div class="mini-stats">
+    <div class="mini-stat"><div class="mini-stat-val">${t.total}</div><div class="mini-stat-lbl">Registros</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${t.tardanzaNums[0]?.[1]||0}</div><div class="mini-stat-lbl">Máx tardanza</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${t.tardanzaNums.length}</div><div class="mini-stat-lbl">Números únicos</div></div>
+  </div>`;
+
+  // ── Tabla de tardanza por posición ──────────────────────
+  html+=`<div class="hist-card"><h3>⏱️ Tardanza por posición de dígito</h3>
+  <p style="font-size:10px;color:#6b7280;margin-bottom:10px">Sorteos que lleva sin salir cada dígito (0-9) en cada posición del número</p>`;
+
+  const posLabels=['1ª cifra','2ª cifra','3ª cifra','4ª cifra'];
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">`;
+
+  t.tardanzaPos.forEach((digList,pos)=>{
+    html+=`<div style="background:#0f0f0f;border-radius:10px;padding:10px;border:1px solid #222">
+      <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">${posLabels[pos]}</div>`;
+
+    digList.forEach(([dig,tard],idx)=>{
+      const maxT=digList[0]?.[1]||1;
+      const barW=Math.round((tard/maxT)*100);
+      const isTop = idx===0;
+      const color = isTop?'#ef4444': tard>=5?'#f59e0b': tard>=2?'#3b82f6':'#374151';
+      html+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;color:${isTop?'#ef4444':'#e5e7eb'};width:16px;text-align:center">${dig}</span>
+        <div style="flex:1;background:#1a1a1a;border-radius:3px;height:10px;overflow:hidden">
+          <div style="width:${Math.max(4,barW)}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="font-size:10px;color:${isTop?'#ef4444':'#6b7280'};width:22px;text-align:right;font-weight:${isTop?'700':'400'}">${tard}s</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  html+=`</div></div>`;
+  html+=`<div class="aviso">s = sorteos desde última aparición · ⚠️ Solo estadística descriptiva</div>`;
+
+  document.getElementById('modal-body').innerHTML=html;
+}
+
+function renderRezago(sorteo){
+  const rez=calcRezago(sorteo);
+  if(!rez||!rez.length){document.getElementById('modal-body').innerHTML=`<div class="empty-analisis"><span class="empty-icon">⏳</span><p>Mínimo 5 registros.<br>Usa "Actualizar histórico" en Stats.</p></div>`;return}
+  const regs=(getHist()[sorteo]||[]);
+  let html=`<div class="mini-stats"><div class="mini-stat"><div class="mini-stat-val">${regs.length}</div><div class="mini-stat-lbl">Registros</div></div><div class="mini-stat"><div class="mini-stat-val">${rez[0]?.[1]||0}</div><div class="mini-stat-lbl">Max rezago</div></div><div class="mini-stat"><div class="mini-stat-val">${rez.length}</div><div class="mini-stat-lbl">Rezagados</div></div></div>`;
+  html+=`<div class="hist-card"><h3>⏳ Números rezagados</h3>`;
+  rez.forEach(([n,i])=>{
+    const cls=i>=10?'critico':i>=6?'alto':'medio';
+    const txt=i>=10?'Rezago crítico':i>=6?'Rezago alto':'Rezago normal';
+    html+=`<div class="rezago-item"><span class="rezago-num">${n}</span><div style="text-align:right"><div style="color:#e5e7eb;font-size:12px;font-weight:700">${i} sorteos atrás</div><span class="rezago-tag ${cls}">${txt}</span></div></div>`;
+  });
+  html+=`</div><div class="aviso">⚠️ El rezago no garantiza que el número saldrá pronto.</div>`;
+  document.getElementById('modal-body').innerHTML=html;
+}
+
+function actualizarAnalisis(sorteo,num){
+  const top10=getTop10(sorteo,num);
+  const nReg=(getHist()[sorteo]||[]).length;
+  const colorMap={
+    '🔵':'#3b5bdb','🔄':'#0891b2','📊':'#7c3aed','⏱️':'#b45309',
+    '🔀':'#0f766e','⚡':'#c2410c','🟢':'#166534','⭐':'#1e3a5f'
+  };
+
+  let html=`<div class="top-card"><div class="top-title">🏆 ${sorteo}</div>
+    <div class="top-sub">Resultado analizado: <strong style="font-size:18px;letter-spacing:3px">${num}</strong></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">`;
+
+  top10.slice(0,5).forEach((c,i)=>{
+    const icon=c.label.split(' ')[0];
+    const labelText=c.label.replace(icon,'').trim();
+    const bg=colorMap[icon]||'#1e3a5f';
+    html+=`<div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,${bg}22,${bg}11);border:1px solid ${bg}55;border-radius:11px;padding:9px 13px;">
+      <div style="font-size:10px;font-weight:700;color:#9ca3af;flex:1">${icon} ${labelText}</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:${i<2?'24px':'20px'};font-weight:700;letter-spacing:3px;color:${i===0?'#fbbf24':i===1?'#e2e8f0':'#94a3b8'}">${c.num}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  if(top10.length>5){
+    html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">`;
+    top10.slice(5).forEach(c=>{
+      html+=`<div style="background:#111;border:1px solid #222;border-radius:8px;padding:6px 10px;font-family:'Oswald',sans-serif;font-size:15px;color:#6b7280;letter-spacing:2px">${c.num}</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  document.getElementById('analisis-body').innerHTML=html;
+}
+
+function renderHistorialModal(sorteo){
+  // Guardar el resultado actual usando la fecha ISO que ya tenemos en mState
+  // mState.fecha viene del campo fecha del sorteo (texto como "sábado 02-05-2026")
+  // El resultado ya se guarda automáticamente en cargarDatos() con fechaHoy ISO
+  // No re-guardar aquí para evitar duplicados
+
+  const regs=(getHist()[sorteo]||[]);
+  if(!regs.length){
+    document.getElementById('modal-body').innerHTML=`<div class="empty-analisis"><span class="empty-icon">📋</span><p>Sin historial para este sorteo.<br>Abre la app cada día para acumular resultados.</p></div>`;
+    return;
+  }
+
+  // regs[0] = más reciente, regs[last] = más antiguo
+  const masReciente = regs[0]?.fecha?.slice(5)||'—';
+  const masAntiguo  = regs[regs.length-1]?.fecha?.slice(5)||'—';
+
+  let html=`<div class="mini-stats">
+    <div class="mini-stat"><div class="mini-stat-val">${regs.length}</div><div class="mini-stat-lbl">Registros</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${masReciente}</div><div class="mini-stat-lbl">Más reciente</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${masAntiguo}</div><div class="mini-stat-lbl">Más antiguo</div></div>
+  </div>`;
+
+  html+=`<div class="hist-card" style="padding:0;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-family:'Nunito',sans-serif">
+      <thead>
+        <tr style="background:#1a1a1a;border-bottom:1px solid #2a2a2a">
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:1px;width:40px">#</th>
+          <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:1px">Fecha</th>
+          <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:1px">Resultado</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  regs.forEach((r,i)=>{
+    const isRecent = i < 3;
+    const bg = i%2===0 ? '#111' : '#0f0f0f';
+    const [y,m,d] = r.fecha.split('-');
+    const fechaFmt = `${d}/${m}/${y}`;
+    const rowNum = regs.length - i;
+    // ¿El resultado actual estaba entre los candidatos del registro anterior?
+    const prevReg = regs[i+1];
+    let acierto='';
+    if(prevReg&&prevReg.candidatos){
+      const todasCands=Object.values(prevReg.candidatos).flat();
+      if(todasCands.includes(r.numero)) acierto=`<span style="background:#14532d;color:#86efac;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px">✓</span>`;
+    }
+    html+=`<tr style="background:${bg};border-bottom:1px solid #1a1a1a">
+      <td style="padding:7px 12px;font-size:11px;color:#4b5563">${rowNum}</td>
+      <td style="padding:7px 12px;font-size:12px;color:${isRecent?'#e5e7eb':'#6b7280'}">${fechaFmt}</td>
+      <td style="padding:7px 12px;text-align:right;font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:${isRecent?'#fbbf24':'#9ca3af'};letter-spacing:3px">${r.numero}${acierto}</td>
+    </tr>`;
+  });
+
+  html+=`</tbody></table></div>`;
+  html+=`<div class="aviso">Los 3 más recientes en amarillo · ✓ = resultado estaba en candidatos del día anterior</div>`;
+  document.getElementById('modal-body').innerHTML=html;
+}
+
+function cerrarModal(e){
+  if(!e||e.target===document.getElementById('modal')||e.currentTarget.tagName==='BUTTON')
+    document.getElementById('modal').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PANEL STATS
+// ═══════════════════════════════════════════════════════════
+let statsTab='metodos';
+
+function renderHistorialPanel(){
+  const h=getHist();
+  const sorteos=Object.keys(h);
+  const total=sorteos.reduce((s,k)=>s+(h[k].length),0);
+
+  let html=`<div class="mini-stats">
+    <div class="mini-stat"><div class="mini-stat-val">${sorteos.length}</div><div class="mini-stat-lbl">Sorteos</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${total}</div><div class="mini-stat-lbl">Registros</div></div>
+    <div class="mini-stat"><div class="mini-stat-val">${sorteos.filter(s=>(h[s]||[]).length>=10).length}</div><div class="mini-stat-lbl">Con 10+</div></div>
+  </div>`;
+
+  // BOTÓN — nuevo sistema de carga masiva desde astroluna.co
+  const nSemilla = Object.keys(SEMILLA_HISTORICO).length;
+  html+=`<div style="background:#0f1a0f;border:1.5px solid #166534;border-radius:12px;padding:14px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:#86efac;margin-bottom:6px">✅ Sistema activo — acumulación automática</div>
+    <p style="font-size:11px;color:#4ade80;line-height:1.7;margin-bottom:10px">
+      Cada vez que abres la app y carga resultados, se guarda automáticamente el resultado del día.<br><br>
+      📦 <strong style="color:#fbbf24">Semilla precargada:</strong> ${nSemilla} sorteos con datos reales.<br>
+      📈 <strong style="color:#fbbf24">Dorado Mañana</strong> ya tiene 100 registros históricos.
+    </p>
+    <button id="btn-hist-update" onclick="actualizarTodoElHistorico()" style="background:linear-gradient(135deg,#1e3a5f,#1e4080);border:1px solid #3b82f6;border-radius:10px;color:#93c5fd;font-size:13px;font-weight:700;padding:11px 14px;cursor:pointer;font-family:'Nunito',sans-serif;width:100%;margin-bottom:8px">
+      🌐 Cargar histórico completo desde astroluna.co
+    </button>
+    <p style="font-size:10px;color:#4ade80;line-height:1.6;margin-bottom:8px">
+      ⚠️ Funciona mejor desde el celular con datos móviles o WiFi.<br>
+      Descarga hasta 100 resultados por sorteo directamente desde astroluna.co.
+    </p>
+    <div id="progress-hist" style="display:none;background:#0a0a0a;border-radius:8px;padding:10px;border:1px solid #166534">
+      <div style="background:#1a1a1a;border-radius:6px;height:12px;overflow:hidden;margin-bottom:8px">
+        <div id="hist-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:6px;transition:width 0.3s"></div>
+      </div>
+      <div id="hist-log" style="font-size:10px;color:#4ade80;max-height:120px;overflow-y:auto;line-height:1.8"></div>
+    </div>
+    <button onclick="recargarSemilla()" style="background:linear-gradient(135deg,#1e3a5f,#1e4080);border:1px solid #3b82f6;border-radius:10px;color:#93c5fd;font-size:13px;font-weight:700;padding:11px 14px;cursor:pointer;font-family:'Nunito',sans-serif;width:100%;margin-bottom:8px">
+      📥 Recargar historial completo (hasta 100 por lotería)
+    </button>
+  </div>
+  <p style="font-size:10px;color:#4b5563;text-align:center;margin-bottom:14px">
+    Cuantos más días uses la app, más preciso se vuelve el análisis.
+  </p>`;
+
+  html+=`<div class="tabs">
+    <button class="tab-btn ${statsTab==='metodos'?'active':''}" onclick="statsTab='metodos';renderHistorialPanel()">🏆 Métodos</button>
+    <button class="tab-btn ${statsTab==='top'?'active':''}" onclick="statsTab='top';renderHistorialPanel()">📈 Sorteos</button>
+    <button class="tab-btn ${statsTab==='buscar'?'active':''}" onclick="statsTab='buscar';renderHistorialPanel()">🔍 Buscar</button>
+    <button class="tab-btn ${statsTab==='datos'?'active':''}" onclick="statsTab='datos';renderHistorialPanel()">🗑️ Datos</button>
+  </div>`;
+
+  if(total===0){
+    html+=`<div class="empty-analisis"><span class="empty-icon">📊</span><p style="font-size:14px">Sin historial aún.<br>Pulsa <strong style="color:#fbbf24">Actualizar histórico</strong><br>para cargar datos pasados.</p></div>`;
+  } else if(statsTab==='metodos'){
+    html+=renderStatsMetodos(h,sorteos);
+  } else if(statsTab==='top'){
+    html+=renderStatsTop(h,sorteos);
+  } else if(statsTab==='buscar'){
+    html+=renderStatsBuscar();
+  } else {
+    html+=renderStatsDatos(total);
+  }
+
+  document.getElementById('historial-body').innerHTML=html;
+}
+
+function renderStatsMetodos(h,sorteos){
+  const global={};
+  METODOS.forEach(m=>{global[m.id]={hits:0,total:0}});
+  let evaluados=0;
+  sorteos.forEach(s=>{
+    const sc=evaluarMetodos(s);
+    if(!sc) return;
+    evaluados++;
+    METODOS.forEach(m=>{global[m.id].hits+=sc[m.id].hits;global[m.id].total+=sc[m.id].total});
+  });
+  if(!evaluados) return `<div class="empty-analisis"><span class="empty-icon">🏆</span><p>Necesitas al menos 2 días de historial por sorteo.<br>Usa el botón de arriba para descargar.</p></div>`;
+  const ranked=METODOS.map(m=>{
+    const pct=global[m.id].total>0?Math.round(global[m.id].hits/global[m.id].total*100):0;
+    return{...m,pct,hits:global[m.id].hits,total:global[m.id].total};
+  }).sort((a,b)=>b.pct-a.pct);
+  const maxP=ranked[0]?.pct||1;
+  let html=`<div class="hist-card"><h3>🏆 Rendimiento global (${evaluados} sorteos)</h3>`;
+  ranked.forEach((m,i)=>{
+    html+=`<div class="method-score-row">
+      <span class="ms-name">${i===0?'👑':i===1?'🥈':i===2?'🥉':'  '} ${m.name}</span>
+      <div class="ms-bar-wrap"><div class="ms-bar" style="width:${maxP>0?Math.round(m.pct/maxP*100):0}%"></div></div>
+      <span class="ms-pct">${m.pct}%</span>
+    </div>
+    <div style="text-align:right;font-size:10px;color:#4b5563;margin-bottom:5px">${m.hits} aciertos / ${m.total} eval.</div>`;
+  });
+  return html+'</div>';
+}
+
+function renderStatsTop(h,sorteos){
+  const ranked=sorteos.map(s=>({nombre:s,count:(h[s]||[]).length,ultimo:(h[s]||[])[0]?.numero||'—'})).sort((a,b)=>b.count-a.count).slice(0,15);
+  const max=ranked[0]?.count||1;
+  let html=`<div class="hist-card"><h3>📈 Sorteos con más historial</h3>`;
+  ranked.forEach(r=>{
+    html+=`<div style="margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:12px;color:#e5e7eb;font-weight:700">${r.nombre}</span>
+        <span style="font-size:11px;color:#fbbf24">${r.count} · ${r.ultimo}</span>
+      </div>
+      <div style="background:#1a1a1a;border-radius:4px;height:7px;overflow:hidden">
+        <div style="width:${Math.round(r.count/max*100)}%;height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:4px"></div>
+      </div>
+    </div>`;
+  });
+  return html+'</div>';
+}
+
+function renderStatsDatos(total){
+  const kb=Math.round(JSON.stringify(getHist()).length/1024);
+  return `<div class="hist-card">
+    <h3>🗑️ Gestión de datos</h3>
+    <p style="font-size:13px;color:#9ca3af;margin-bottom:14px">${total} registros guardados · ~${kb} KB en tu dispositivo.</p>
+    <button onclick="confirmarBorrar()" style="background:#dc2626;border:none;border-radius:8px;color:#fff;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;width:100%">
+      🗑️ Borrar todo el historial
+    </button>
+    <p style="font-size:10px;color:#4b5563;margin-top:8px;text-align:center">Esto reinicia el aprendizaje desde cero.</p>
+  </div>`;
+}
+
+function renderStatsBuscar(){
+  return `<div class="hist-card">
+    <h3>🔍 Buscar número en historial</h3>
+    <p style="font-size:11px;color:#6b7280;margin-bottom:12px">¿Cuándo salió un número en cada sorteo?</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <input id="buscar-input" type="number" min="0" max="9999" placeholder="Ej: 1234"
+        style="flex:1;background:#111;border:1px solid #333;border-radius:8px;color:#e5e7eb;padding:10px 12px;font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:3px;outline:none;"
+        oninput="this.value=this.value.slice(0,4)"
+        onkeydown="if(event.key==='Enter')buscarEnHistorial()">
+      <button onclick="buscarEnHistorial()" style="background:linear-gradient(135deg,#6366f1,#818cf8);border:none;border-radius:8px;color:#fff;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">Buscar</button>
+    </div>
+    <div id="buscar-resultado"></div>
+  </div>`;
+}
+
+function buscarEnHistorial(){
+  const raw=document.getElementById('buscar-input')?.value||'';
+  const num=raw.padStart(4,'0');
+  if(num.length!==4||!/^\d{4}$/.test(num)){
+    document.getElementById('buscar-resultado').innerHTML='<p style="color:#ef4444;font-size:12px">Ingresa un número de 4 dígitos.</p>';
+    return;
+  }
+  const h=getHist();
+  const resultados=[];
+  Object.keys(h).forEach(sorteo=>{
+    (h[sorteo]||[]).forEach((r,i)=>{
+      if(r.numero===num) resultados.push({sorteo,fecha:r.fecha,posicion:i+1,total:h[sorteo].length});
+    });
+  });
+  const el=document.getElementById('buscar-resultado');
+  if(!resultados.length){
+    el.innerHTML=`<div style="text-align:center;padding:20px;color:#4b5563"><span style="font-size:32px;display:block;margin-bottom:8px">🔍</span><p style="font-size:13px">El número <strong style="color:#fbbf24;font-family:'Oswald',sans-serif;letter-spacing:2px">${num}</strong> no aparece en el historial.</p></div>`;
+    return;
+  }
+  resultados.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  let html=`<p style="font-size:11px;color:#22c55e;margin-bottom:10px">✅ Encontrado ${resultados.length} vez${resultados.length>1?'es':''}</p>`;
+  resultados.forEach(r=>{
+    const [y,m,d]=r.fecha.split('-');
+    html+=`<div style="background:#111;border-radius:8px;padding:9px 12px;margin-bottom:6px;border:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#e5e7eb">${r.sorteo}</div>
+        <div style="font-size:10px;color:#4b5563">${d}/${m}/${y} · registro #${r.posicion} de ${r.total}</div>
+      </div>
+      <div style="font-family:'Oswald',sans-serif;font-size:20px;color:#fbbf24;letter-spacing:3px">${num}</div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function confirmarBorrar(){
+  if(confirm('¿Borrar todo el historial? Se reinicia el análisis inteligente.')){
+    localStorage.removeItem(STORAGE_KEY);
+    renderHistorialPanel();
+  }
+}
+
+function recargarSemilla(){
+  // Borrar TODO el historial y recargar semilla desde cero
+  localStorage.removeItem(STORAGE_KEY);
+  ['v1','v2','v3','v4','v5'].forEach(v=>localStorage.removeItem('oficiales_semilla_'+v));
+  cargarSemilla();
+  renderHistorialPanel();
+  const h=getHist();
+  const total=Object.values(h).reduce((s,v)=>s+v.length,0);
+  const sorteos=Object.keys(h).length;
+  alert('✅ Listo! '+sorteos+' loterías · '+total+' registros cargados.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════
+function showPanel(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).style.display='block';
+  if(btn) btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DOBLE CHANCE
+// ═══════════════════════════════════════════════════════════
+const DOBLE_PARES = [
+  {dia:'Sábado',   nombre:'Boyacá + Cauca',           lots:['Boyacá','Cauca']},
+  {dia:'Viernes',  nombre:'Medellín + Santander',      lots:['Medellín','Santander']},
+  {dia:'Viernes',  nombre:'Medellín + Risaralda',      lots:['Medellín','Risaralda']},
+  {dia:'Jueves',   nombre:'Bogotá + Quindío',          lots:['Bogotá','Quindío']},
+  {dia:'Miércoles',nombre:'Valle + Meta',              lots:['Valle','Meta']},
+  {dia:'Miércoles',nombre:'Valle + Manizales',         lots:['Valle','Manizales']},
+  {dia:'Miércoles',nombre:'Meta + Manizales',          lots:['Meta','Manizales']},
+  {dia:'Lunes',    nombre:'Cruz Roja + Huila',         lots:['Cruz Roja','Huila']},
+  {dia:'Lunes',    nombre:'Cundinamarca + Tolima',     lots:['Cundinamarca','Tolima']},
+];
+
+// Número combinado doble: toma las últimas 2 cifras de cada lotería → 4 cifras
+function combinarDoble(num1, num2){
+  if(!num1||!num2) return null;
+  return (num1.slice(-2) + num2.slice(-2));
+}
+
+// Busca el resultado actual de una lotería en datosGlobales
+function getResultadoLot(nombre){
+  const all=[...datosGlobales.chances,...datosGlobales.loterias];
+  const found=all.find(r=>r.nombre.toLowerCase().includes(nombre.toLowerCase().split(' ')[0]));
+  return found||null;
+}
+
+function renderDobleChance(){
+  const el=document.getElementById('doble-body');
+
+  if(!datosGlobales.loterias.length){
+    el.innerHTML=`<div class="loading"><span class="spinner">⏳</span>Esperando resultados de loterías...</div>`;
+    return;
+  }
+
+  let html=`<div class="estado-bar">
+    <span class="estado-txt">🎯 Doble Chance — Combinaciones del día</span>
+    <span class="estado-dot"></span>
+  </div>`;
+
+  // Agrupar por día
+  const dias=['Sábado','Viernes','Jueves','Miércoles','Lunes'];
+  dias.forEach(dia=>{
+    const pares=DOBLE_PARES.filter(p=>p.dia===dia);
+    if(!pares.length) return;
+
+    html+=`<div class="seccion-titulo" style="margin-bottom:10px">📅 ${dia.toUpperCase()} <span class="sec-count">${pares.length} par${pares.length>1?'es':''}</span></div>`;
+
+    pares.forEach(par=>{
+      const r1=getResultadoLot(par.lots[0]);
+      const r2=getResultadoLot(par.lots[1]);
+      const num1=r1?.resultado||null;
+      const num2=r2?.resultado||null;
+      const combinado=num1&&num2?combinarDoble(num1,num2):null;
+
+      html+=`<div class="doble-card" onclick="${combinado?`abrirModalDoble('${par.nombre.replace(/'/g,"\\'")}','${combinado}','${par.lots[0].replace(/'/g,"\\'")}','${par.lots[1].replace(/'/g,"\\'")}')`:''}" style="${!combinado?'cursor:default':''}">
+        <div class="doble-dia">${par.dia}</div>
+        <div class="doble-titulo">🎯 ${par.nombre}</div>
+
+        <div class="doble-row">
+          <span class="doble-lot-nombre">${par.lots[0]}</span>
+          <span class="doble-lot-num">${num1||'—'}</span>
+        </div>
+
+        <div class="doble-separator">+</div>
+
+        <div class="doble-row">
+          <span class="doble-lot-nombre">${par.lots[1]}</span>
+          <span class="doble-lot-num">${num2||'—'}</span>
+        </div>
+
+        ${combinado
+          ?`<div class="doble-combinado">
+              <span class="doble-comb-lbl">🔢 Número combinado</span>
+              <span class="doble-comb-num">${combinado}</span>
+            </div>`
+          :`<div class="doble-combinado"><span class="doble-sin-datos">Esperando resultados de ambas loterías...</span></div>`
+        }
+      </div>`;
+    });
+  });
+
+  html+=`<div class="aviso">Combinado = últimas 2 cifras de cada lotería · Toca para ver candidatos</div>`;
+  el.innerHTML=html;
+}
+
+// Abrir modal con número combinado del doble chance
+function abrirModalDoble(nombre, numComb, lot1, lot2){
+  // Guardar en historial como sorteo "Doble: X + Y"
+  const sorteoKey=`Doble: ${lot1} + ${lot2}`;
+  const fechaHoy=new Date().toISOString().slice(0,10);
+  registrarResultado(sorteoKey, numComb, fechaHoy, generarCandidatos(numComb));
+
+  mState={nombre:sorteoKey, num:numComb, fecha:fechaHoy};
+  document.getElementById('modal-nombre').textContent='🎯 '+nombre;
+  document.getElementById('modal-num').textContent=numComb;
+  document.getElementById('modal-fecha').textContent=`${lot1} + ${lot2}`;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  renderCandidatos(sorteoKey, numComb);
+  document.getElementById('modal').classList.add('show');
+  actualizarAnalisis(sorteoKey, numComb);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.panel').forEach((p,i)=>p.style.display=i===0?'block':'none');
+// service worker desactivado para mayor compatibilidad
+setTimeout(()=>{
+  document.getElementById('splash').classList.add('hide');
+  limpiarHistorial();
+  // Borrar historial viejo de loterías oficiales para forzar carga de semilla nueva
+  const _h = getHist();
+  const _lots = ['Boyacá','Cauca','Medellín','Bogotá','Santander','Risaralda','Quindío','Valle','Meta','Manizales','Cruz Roja','Huila','Cundinamarca','Tolima'];
+  _lots.forEach(l=>{ if(_h[l]) delete _h[l]; });
+  saveHist(_h);
+  cargarSemilla();
+  cargarDatos();
+},800);
+// Auto-refresh cada 30 minutos
+setInterval(()=>{ cargarDatos(); }, 30*60*1000);
+</script>
+</body>
+</html>
