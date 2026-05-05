@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Actualizando...</title>
+<style>
+body{background:#0d0d1a;color:#e2e8f0;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:20px}
+h2{color:#fbbf24;margin-bottom:16px}
+p{color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:8px}
+.bar{width:260px;height:8px;background:#1a1a35;border-radius:4px;margin:20px auto;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,#6366f1,#06b6d4,#fbbf24);border-radius:4px;animation:load 3s linear forwards}
+@keyframes load{from{width:0}to{width:100%}}
+</style>
+</head>
+<body>
+<h2>⚙️ Actualizando app...</h2>
+<p>Borrando caché viejo<br>y cargando datos nuevos</p>
+<div class="bar"><div class="fill"></div></div>
+<p id="msg" style="color:#22c55e;font-size:13px"></p>
+<script>
+async function reset(){
+  const msg = document.getElementById('msg');
+  
+  // 1. Matar todos los service workers
+  if('serviceWorker' in navigator){
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for(const r of regs){ await r.unregister(); }
+    msg.textContent = '✓ Service worker eliminado';
+  }
+  
+  // 2. Borrar todos los cachés
+  if('caches' in window){
+    const keys = await caches.keys();
+    for(const k of keys){ await caches.delete(k); }
+    msg.textContent = '✓ Caché borrado';
+  }
+
+  // 3. Borrar localStorage de semilla
+  ['v1','v2','v3','v4','v5'].forEach(v=>{
+    localStorage.removeItem('oficiales_semilla_'+v);
+  });
+  msg.textContent = '✓ Datos listos — redirigiendo...';
+
+  // 4. Redirigir a index.html con parámetro para evitar caché
+  setTimeout(()=>{
+    window.location.href = './oficiales.html?reset=' + Date.now();
+  }, 1000);
+}
+reset();
+</script>
+</body>
+</html>
